@@ -1,0 +1,5 @@
+.stack-work/
+*~
+config.yaml
+*.db
+diagrams/

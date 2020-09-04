@@ -1,0 +1,71 @@
+name:                haskell-twitch-overlay
+version:             0.1.0.0
+github:              "chiroptical/haskell-twitch-overlay"
+license:             BSD3
+author:              "Barry Moore II"
+maintainer:          "chiroptical@gmail.com"
+copyright:           "2020 Barry Moore II"
+
+extra-source-files:
+- README.md
+- ChangeLog.md
+
+# Metadata used when publishing your package
+# synopsis:            Short description of your package
+# category:            Web
+
+# To avoid duplicated efforts in documentation and dealing with the
+# complications of embedding Haddock markup inside cabal files, it is
+# common to point users to the README.md file.
+description:         Please see the README on GitHub at <https://github.com/chiroptical/haskell-twitch-overlay#readme>
+
+dependencies:
+- base >= 4.7 && < 5
+- servant
+- servant-server
+- servant-client-core
+- servant-client
+- http-client
+- http-client-tls
+- aeson
+- warp
+- text
+- load-env
+- uri-encode
+- polysemy
+- polysemy-plugin
+- beam-core
+- beam-sqlite
+- sqlite-simple
+- time
+- random
+- yamlparse-applicative
+- path
+- path-io
+
+library:
+  source-dirs: src
+
+executables:
+  haskell-twitch-overlay-exe:
+    main:                Main.hs
+    source-dirs:         app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -fplugin=Polysemy.Plugin
+    dependencies:
+    - haskell-twitch-overlay
+
+tests:
+  haskell-twitch-overlay-test:
+    main:                Spec.hs
+    source-dirs:         test
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    - -fplugin=Polysemy.Plugin
+    dependencies:
+    - haskell-twitch-overlay

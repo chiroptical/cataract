@@ -1,0 +1,130 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.33.0.
+--
+-- see: https://github.com/sol/hpack
+--
+-- hash: 3c2266c623b41d8ef5ad1cc61e6e7f2f6577861731c558a3a9881014db60c153
+
+name:           haskell-twitch-overlay
+version:        0.1.0.0
+description:    Please see the README on GitHub at <https://github.com/chiroptical/haskell-twitch-overlay#readme>
+homepage:       https://github.com/chiroptical/haskell-twitch-overlay#readme
+bug-reports:    https://github.com/chiroptical/haskell-twitch-overlay/issues
+author:         Barry Moore II
+maintainer:     chiroptical@gmail.com
+copyright:      2020 Barry Moore II
+license:        BSD3
+license-file:   LICENSE
+build-type:     Simple
+extra-source-files:
+    README.md
+    ChangeLog.md
+
+source-repository head
+  type: git
+  location: https://github.com/chiroptical/haskell-twitch-overlay
+
+library
+  exposed-modules:
+      Api
+      Config
+      Database
+      Database.Table.Token
+      TwitchApi
+      Url
+  other-modules:
+      Paths_haskell_twitch_overlay
+  hs-source-dirs:
+      src
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , beam-core
+    , beam-sqlite
+    , http-client
+    , http-client-tls
+    , load-env
+    , path
+    , path-io
+    , polysemy
+    , polysemy-plugin
+    , random
+    , servant
+    , servant-client
+    , servant-client-core
+    , servant-server
+    , sqlite-simple
+    , text
+    , time
+    , uri-encode
+    , warp
+    , yamlparse-applicative
+  default-language: Haskell2010
+
+executable haskell-twitch-overlay-exe
+  main-is: Main.hs
+  other-modules:
+      Paths_haskell_twitch_overlay
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fplugin=Polysemy.Plugin
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , beam-core
+    , beam-sqlite
+    , haskell-twitch-overlay
+    , http-client
+    , http-client-tls
+    , load-env
+    , path
+    , path-io
+    , polysemy
+    , polysemy-plugin
+    , random
+    , servant
+    , servant-client
+    , servant-client-core
+    , servant-server
+    , sqlite-simple
+    , text
+    , time
+    , uri-encode
+    , warp
+    , yamlparse-applicative
+  default-language: Haskell2010
+
+test-suite haskell-twitch-overlay-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Paths_haskell_twitch_overlay
+  hs-source-dirs:
+      test
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fplugin=Polysemy.Plugin
+  build-depends:
+      aeson
+    , base >=4.7 && <5
+    , beam-core
+    , beam-sqlite
+    , haskell-twitch-overlay
+    , http-client
+    , http-client-tls
+    , load-env
+    , path
+    , path-io
+    , polysemy
+    , polysemy-plugin
+    , random
+    , servant
+    , servant-client
+    , servant-client-core
+    , servant-server
+    , sqlite-simple
+    , text
+    , time
+    , uri-encode
+    , warp
+    , yamlparse-applicative
+  default-language: Haskell2010
