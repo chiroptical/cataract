@@ -42,6 +42,8 @@ dependencies:
 - yamlparse-applicative
 - path
 - path-io
+- bytestring
+- http-media
 
 library:
   source-dirs: src
@@ -55,6 +57,7 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     - -fplugin=Polysemy.Plugin
+    - -Wall
     dependencies:
     - haskell-twitch-overlay
 
@@ -67,5 +70,6 @@ tests:
     - -rtsopts
     - -with-rtsopts=-N
     - -fplugin=Polysemy.Plugin
+    - -Wall
     dependencies:
     - haskell-twitch-overlay

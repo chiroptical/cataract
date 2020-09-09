@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 3c2266c623b41d8ef5ad1cc61e6e7f2f6577861731c558a3a9881014db60c153
+-- hash: 535dc775d41c0a0b0efdc265258ded244c50c70b5b1c3eaec47e021e22072e1d
 
 name:           haskell-twitch-overlay
 version:        0.1.0.0
@@ -42,8 +42,10 @@ library
     , base >=4.7 && <5
     , beam-core
     , beam-sqlite
+    , bytestring
     , http-client
     , http-client-tls
+    , http-media
     , load-env
     , path
     , path-io
@@ -68,15 +70,17 @@ executable haskell-twitch-overlay-exe
       Paths_haskell_twitch_overlay
   hs-source-dirs:
       app
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fplugin=Polysemy.Plugin
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fplugin=Polysemy.Plugin -Wall
   build-depends:
       aeson
     , base >=4.7 && <5
     , beam-core
     , beam-sqlite
+    , bytestring
     , haskell-twitch-overlay
     , http-client
     , http-client-tls
+    , http-media
     , load-env
     , path
     , path-io
@@ -102,15 +106,17 @@ test-suite haskell-twitch-overlay-test
       Paths_haskell_twitch_overlay
   hs-source-dirs:
       test
-  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fplugin=Polysemy.Plugin
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N -fplugin=Polysemy.Plugin -Wall
   build-depends:
       aeson
     , base >=4.7 && <5
     , beam-core
     , beam-sqlite
+    , bytestring
     , haskell-twitch-overlay
     , http-client
     , http-client-tls
+    , http-media
     , load-env
     , path
     , path-io
