@@ -1,22 +1,25 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Api where
 
 import Config (Config (..))
-import Control.Monad (void)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (MonadIO (liftIO))
+import Control.Monad.Logger (runStdoutLoggingT)
 import Data.Char (isAlphaNum)
+import Data.Functor (void)
+import Data.Pool (Pool)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.Text as T
-import Data.Time (getCurrentTime)
-import Database (insertToken_)
-import Database.Beam.Sqlite (runBeamSqlite)
-import Database.SQLite.Simple (close, open)
-import Database.Table.Token (TokenType (UserToken))
+import Database (Bearer (Bearer), NamedToken (UserCode), Refresh (Refresh), upsertToken)
+import Database.Persist.Sql (SqlBackend)
+import Database.Persist.Sqlite (runSqlPool)
 import GHC.Generics (Generic)
 import Servant
   ( Headers,
@@ -62,8 +65,8 @@ api = genericApi (Proxy :: Proxy Routes)
 
 -- TODO:
 -- - IO should probably be a `Sem r a` or Transformer equivalent?
-handlers :: MonadIO m => Config -> Routes (AsServerT m)
-handlers Config {..} =
+handlers :: MonadIO m => Config -> Pool SqlBackend -> Routes (AsServerT m)
+handlers Config {..} pool =
   Routes
     { _authorize =
         -- TODO:
@@ -75,14 +78,9 @@ handlers Config {..} =
       -- - Should we POST the token back to the server?
       _oauth2callback =
         -- \mCode mState mScope -> do
-        \mCode _ _ -> do
-          conn <- liftIO $ open "test.db"
-          utcTime <- liftIO getCurrentTime
-          void $ case mCode of
-            Just code ->
-              liftIO $ runBeamSqlite conn $ insertToken_ UserToken code utcTime
-            Nothing -> error "..."
-          liftIO $ close conn
+        \mCode _ _ -> case mCode of
+          Just code -> liftIO . runStdoutLoggingT . void $ runSqlPool (upsertToken UserCode (Bearer code) (Refresh "...")) pool
+          Nothing -> pure ()
           -- TODO:
           -- - GET /subscribers
           -- - GET /followers
@@ -102,5 +100,5 @@ handlers Config {..} =
             ("scope", requiredScopes)
           ]
 
-app :: Config -> Application
-app = genericServe . handlers
+app :: Config -> Pool SqlBackend -> Application
+app config pool = genericServe (handlers config pool)

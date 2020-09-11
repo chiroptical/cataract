@@ -1,71 +1,62 @@
-{-# LANGUAGE DeriveAnyClass #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE StandaloneDeriving #-}
+{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE UndecidableInstances #-}
 
 module Database where
 
+import Control.Monad.IO.Class (MonadIO)
+import Control.Monad.Trans.Reader (ReaderT)
 import qualified Data.Text as T
-import Data.Time.Clock (UTCTime)
-import Database.Beam
-  ( Database,
-    DatabaseSettings,
-    Generic,
-    TableEntity,
-    dbModification,
-    defaultDbSettings,
-    insertExpressions,
-    modifyTableFields,
-    setEntityName,
-    tableModification,
-    val_,
-    withDbModification,
-  )
-import Database.Beam.Sqlite
-  ( SqliteM,
-    insertReturning,
-    runInsertReturningList,
-  )
-import Database.SQLite.Simple (Connection, execute_)
-import Database.Table.Token (TokenT (..), TokenType (..), Token_)
+import Database.Persist (Entity)
+import Database.Persist.Sqlite (PersistQueryRead (selectFirst), PersistUniqueWrite (upsert), SqlBackend, runMigration, (=.), (==.))
+import qualified Database.Persist.TH as PTH
 
-newtype Db f = Db
-  { _tableToken :: f (TableEntity TokenT)
-  }
-  deriving (Generic, Database be)
+PTH.share
+  [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"]
+  [PTH.persistLowerCase|
+Bearer
+  token T.Text
 
-db :: DatabaseSettings be Db
-db =
-  defaultDbSettings
-    `withDbModification` dbModification
-      { _tableToken =
-          setEntityName "tokens"
-            <> modifyTableFields
-              tableModification
-                { _tokenType = "type",
-                  _tokenBearer = "bearer",
-                  _tokenIssueTime = "issue_time"
-                }
-      }
+Refresh
+  token T.Text
 
-makeTablesIfNotExists :: Connection -> IO ()
-makeTablesIfNotExists conn =
-  execute_
-    conn
-    "CREATE TABLE IF NOT EXISTS tokens \
-    \( type TEXT NOT NULL UNIQUE PRIMARY KEY \
-    \, bearer TEXT NOT NULL \
-    \, issue_time TEXT NOT NULL \
-    \)"
+Token
+  name T.Text
+  code Bearer
+  refresh Refresh
+  UniqueName name
+|]
 
-insertToken_ :: TokenType -> T.Text -> UTCTime -> SqliteM Token_
-insertToken_ tokenType bearer utcTime = do
-  [token_] <-
-    runInsertReturningList $
-      insertReturning (_tableToken db) $
-        insertExpressions [Token_ (val_ tokenType) (val_ bearer) (val_ utcTime)]
-  pure token_
+data NamedToken = UserCode | AuthorizationCode deriving (Show, Eq)
+
+deriving instance Show Token
+
+deriving instance Eq Token
+
+deriving instance Show Bearer
+
+deriving instance Eq Bearer
+
+deriving instance Show Refresh
+
+deriving instance Eq Refresh
+
+showText :: Show a => a -> T.Text
+showText = T.pack . show
+
+makeTables :: MonadIO m => ReaderT SqlBackend m ()
+makeTables = runMigration migrateAll
+
+upsertToken :: MonadIO m => NamedToken -> Bearer -> Refresh -> ReaderT SqlBackend m (Entity Token)
+upsertToken name bearer refresh = upsert record [TokenCode =. bearer, TokenRefresh =. refresh]
+  where
+    record = Token (showText name) bearer refresh
+
+selectToken :: MonadIO m => NamedToken -> ReaderT SqlBackend m (Maybe (Entity Token))
+selectToken name = selectFirst [TokenName ==. token] []
+  where
+    token = showText name
