@@ -6,12 +6,12 @@ import Api (app)
 import Config (Config (..))
 import Data.Time (getCurrentTime)
 import Database
-  ( insertToken_,
+  ( Token (..),
+    insertToken_,
     makeTablesIfNotExists,
   )
 import Database.Beam.Sqlite.Connection (runBeamSqliteDebug)
 import Database.SQLite.Simple (close, open)
-import Database.Table.Token (TokenType (..))
 import Network.Wai.Handler.Warp (run)
 import Path.IO (resolveFile')
 import YamlParse.Applicative
@@ -25,7 +25,7 @@ basicInsert = do
   utcTime <- getCurrentTime
   r <-
     runBeamSqliteDebug putStrLn conn $
-      insertToken_ UserToken "notRealBearer" utcTime
+      insertToken_ UserToken "notRealBearer" "notRealRefresh" utcTime
   print r
   close conn
 

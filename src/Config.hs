@@ -17,6 +17,7 @@ import YamlParse.Applicative
 data Config = Config
   { portNumber :: Int,
     clientId :: T.Text,
+    clientSecret :: T.Text,
     requiredScopes :: T.Text
   }
   deriving (Show, Eq, Generic, FromJSON)
@@ -27,6 +28,7 @@ instance YamlSchema Config where
       Config
         <$> optionalFieldWithDefault "portNumber" 8081 "The servant port number"
         <*> requiredField "clientId" "Your Twitch client id"
+        <*> requiredField "clientSecret" "Your Twitch client secret **keep hidden**"
         <*> optionalFieldWithDefault
           "requiredScopes"
           "user:read:email channel:read:subscriptions"

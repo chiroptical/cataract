@@ -12,28 +12,20 @@ import Control.Monad.IO.Class (MonadIO, liftIO)
 import Data.Char (isAlphaNum)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.Text as T
-import Data.Time (getCurrentTime)
-import Database (insertToken_)
+import Data.Time (UTCTime (..), diffTimeToPicoseconds, getCurrentTime, picosecondsToDiffTime, utctDay, utctDayTime)
+import Database (Token (..), insertToken_, selectToken)
 import Database.Beam.Sqlite (runBeamSqlite)
 import Database.SQLite.Simple (close, open)
-import Database.Table.Token (TokenType (UserToken))
+import Database.Table.Token (TokenT (..))
 import GHC.Generics (Generic)
-import Servant
-  ( Headers,
-    JSON,
-    NoContent (NoContent),
-    QueryParam,
-    StdMethod (GET),
-    Verb,
-    addHeader,
-    (:>),
-  )
+import Servant (Headers, JSON, NoContent (NoContent), QueryParam, StdMethod (GET), Verb, addHeader, (:>))
 import Servant.API (Get)
 import Servant.API.Generic (ToServantApi, genericApi, (:-))
 import Servant.API.Header (Header)
 import Servant.Server (Application)
 import Servant.Server.Generic (AsServerT, genericServe)
 import System.Random (randomRIO)
+import TwitchApi (RefreshResponse (..), TokenResponse (..), twitchAuthToken, twitchRefreshToken)
 import Url (Url (Url), urlEncode)
 
 genRandomState :: IO T.Text
@@ -53,7 +45,9 @@ type Redirect302 = Verb 'GET 302 '[JSON] NoContentWithLocation
 
 data Routes route = Routes
   { _authorize :: route :- "authorize" :> Redirect302,
-    _oauth2callback :: route :- "oauth2" :> "callback" :> QueryParam "code" T.Text :> QueryParam "state" T.Text :> QueryParam "scope" T.Text :> Get '[JSON] ()
+    _oauth2callback :: route :- "oauth2" :> "callback" :> QueryParam "code" T.Text :> QueryParam "state" T.Text :> QueryParam "scope" T.Text :> Get '[JSON] (),
+    _exchange :: route :- "exchange" :> Get '[JSON] (),
+    _refresh :: route :- "refresh" :> Get '[JSON] ()
   }
   deriving (Generic)
 
@@ -80,12 +74,48 @@ handlers Config {..} =
           utcTime <- liftIO getCurrentTime
           void $ case mCode of
             Just code ->
-              liftIO $ runBeamSqlite conn $ insertToken_ UserToken code utcTime
+              -- TODO:
+              -- - Should probably replace "..." with a Maybe in the database
+              liftIO $ runBeamSqlite conn $ insertToken_ UserToken code "..." utcTime
+            -- TODO:
+            -- - This is terrible...
             Nothing -> error "..."
-          liftIO $ close conn
-          -- TODO:
-          -- - GET /subscribers
-          -- - GET /followers
+          liftIO $ close conn,
+      -- TODO:
+      -- - GET /subscribers
+      -- - GET /followers
+      _exchange = do
+        let redirectUri =
+              "http://localhost:"
+                <> (T.pack . show) portNumber
+                <> "/oauth2/callback"
+        conn <- liftIO $ open "test.db"
+        utcTime <- liftIO getCurrentTime
+        mCode <- liftIO $ runBeamSqlite conn (selectToken UserToken)
+        void $ case mCode of
+          Just Token_ {..} -> do
+            TokenResponse {..} <- liftIO $ twitchAuthToken clientId clientSecret _tokenBearer "authorization_code" redirectUri
+            let oldPicoseconds = diffTimeToPicoseconds (utctDayTime utcTime)
+            let expiresInPicoseconds = (fromIntegral expires_in) * 1000000000000
+            let newDiffTime = picosecondsToDiffTime $ oldPicoseconds + expiresInPicoseconds
+            let newUtcTime = UTCTime (utctDay utcTime) newDiffTime
+            liftIO $ runBeamSqlite conn $ insertToken_ AuthorizationToken access_token refresh_token newUtcTime
+          Nothing -> error "..."
+        liftIO $ close conn,
+      _refresh = do
+        conn <- liftIO $ open "test.db"
+        utcTime <- liftIO getCurrentTime
+        mCode <- liftIO $ runBeamSqlite conn (selectToken AuthorizationToken)
+        void $ case mCode of
+          Just Token_ {..} -> do
+            RefreshResponse {..} <- liftIO $ twitchRefreshToken clientId clientSecret _tokenRefresh "refresh_token"
+            let oldPicoseconds = diffTimeToPicoseconds (utctDayTime utcTime)
+            let expiresInPicoseconds = 3600 * 1000000000000
+            let newDiffTime = picosecondsToDiffTime $ oldPicoseconds + expiresInPicoseconds
+            let newUtcTime = UTCTime (utctDay utcTime) newDiffTime
+            liftIO $ runBeamSqlite conn $ insertToken_ AuthorizationToken access_token refresh_token newUtcTime
+          Nothing -> error "..."
+        liftIO $ close conn
     }
   where
     url =

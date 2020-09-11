@@ -1,5 +1,7 @@
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE DuplicateRecordFields #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
@@ -7,14 +9,14 @@
 
 module TwitchApi where
 
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.Text as T
 import GHC.Generics (Generic)
 import GHC.IO (throwIO)
 import Network.HTTP.Client (newManager)
 import Network.HTTP.Client.TLS (tlsManagerSettings)
-import Servant (JSON, QueryParam', Required, Strict, (:>))
-import Servant.API (Get)
+import Servant (JSON, Post, QueryParam', Required, Strict, (:>))
 import Servant.API.Generic (ToServantApi, genericApi, (:-))
 import Servant.Client
   ( BaseUrl (BaseUrl),
@@ -24,10 +26,27 @@ import Servant.Client
 import Servant.Client.Core (Scheme (Https))
 import Servant.Client.Generic (AsClientT, genericClientHoist)
 
+data TokenResponse = TokenResponse
+  { access_token :: T.Text,
+    refresh_token :: T.Text,
+    expires_in :: Int,
+    scope :: [T.Text],
+    token_type :: T.Text
+  }
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+
+data RefreshResponse = RefreshResponse
+  { access_token :: T.Text,
+    refresh_token :: T.Text,
+    scope :: [T.Text]
+  }
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+
 type RequiredQP = QueryParam' '[Required, Strict]
 
-newtype OAuthRoutes route = OAuthRoutes
-  { _authorize :: route :- "oauth2" :> "authorize" :> RequiredQP "client_id" T.Text :> RequiredQP "redirect_uri" T.Text :> RequiredQP "response_type" T.Text :> RequiredQP "scope" T.Text :> Get '[JSON] ()
+data OAuthRoutes route = OAuthRoutes
+  { _token :: route :- "oauth2" :> "token" :> RequiredQP "client_id" T.Text :> RequiredQP "client_secret" T.Text :> RequiredQP "code" T.Text :> RequiredQP "grant_type" T.Text :> RequiredQP "redirect_uri" T.Text :> Post '[JSON] TokenResponse,
+    _refresh :: route :- "oauth2" :> "token" :> RequiredQP "client_id" T.Text :> RequiredQP "client_secret" T.Text :> RequiredQP "refresh_token" T.Text :> RequiredQP "grant_type" T.Text :> Post '[JSON] RefreshResponse
   }
   deriving (Generic)
 
@@ -43,5 +62,10 @@ clientRoutes =
         runClientM x env >>= either throwIO return
     )
 
-twitchAuthorize :: T.Text -> T.Text -> T.Text -> T.Text -> IO ()
-twitchAuthorize = _authorize clientRoutes
+-- TODO:
+-- - Consider wrapping these in newtypes for clarity?
+twitchAuthToken :: T.Text -> T.Text -> T.Text -> T.Text -> T.Text -> IO TokenResponse
+twitchAuthToken = _token clientRoutes
+
+twitchRefreshToken :: T.Text -> T.Text -> T.Text -> T.Text -> IO RefreshResponse
+twitchRefreshToken = _refresh clientRoutes

@@ -16,14 +16,19 @@ import Database.Beam
     DatabaseSettings,
     Generic,
     TableEntity,
+    all_,
     dbModification,
     defaultDbSettings,
+    guard_,
     insertExpressions,
     modifyTableFields,
+    runSelectReturningOne,
+    select,
     setEntityName,
     tableModification,
     val_,
     withDbModification,
+    (==.),
   )
 import Database.Beam.Sqlite
   ( SqliteM,
@@ -31,7 +36,7 @@ import Database.Beam.Sqlite
     runInsertReturningList,
   )
 import Database.SQLite.Simple (Connection, execute_)
-import Database.Table.Token (TokenT (..), TokenType (..), Token_)
+import Database.Table.Token (TokenT (..), Token_)
 
 newtype Db f = Db
   { _tableToken :: f (TableEntity TokenT)
@@ -48,6 +53,7 @@ db =
               tableModification
                 { _tokenType = "type",
                   _tokenBearer = "bearer",
+                  _tokenRefresh = "refresh",
                   _tokenIssueTime = "issue_time"
                 }
       }
@@ -59,13 +65,27 @@ makeTablesIfNotExists conn =
     "CREATE TABLE IF NOT EXISTS tokens \
     \( type TEXT NOT NULL UNIQUE PRIMARY KEY \
     \, bearer TEXT NOT NULL \
+    \, refresh TEXT NOT NULL \
     \, issue_time TEXT NOT NULL \
     \)"
 
-insertToken_ :: TokenType -> T.Text -> UTCTime -> SqliteM Token_
-insertToken_ tokenType bearer utcTime = do
+data Token = UserToken | AuthorizationToken deriving (Show)
+
+upsertToken_ :: Token -> T.Text -> T.Text -> UTCTime -> SqliteM Token_
+upsertToken_ token bearer refresh utcTime = undefined
+
+insertToken_ :: Token -> T.Text -> T.Text -> UTCTime -> SqliteM Token_
+insertToken_ token bearer refresh utcTime = do
   [token_] <-
     runInsertReturningList $
       insertReturning (_tableToken db) $
-        insertExpressions [Token_ (val_ tokenType) (val_ bearer) (val_ utcTime)]
+        insertExpressions [Token_ (val_ (T.pack . show $ token)) (val_ bearer) (val_ refresh) (val_ utcTime)]
   pure token_
+
+selectToken :: Token -> SqliteM (Maybe Token_)
+selectToken token =
+  runSelectReturningOne $
+    select $ do
+      token_ <- all_ (_tableToken db)
+      guard_ (_tokenType token_ ==. val_ (T.pack . show $ token))
+      pure token_
