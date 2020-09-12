@@ -19,10 +19,10 @@ PTH.share
   [PTH.mkPersist PTH.sqlSettings, PTH.mkMigrate "migrateAll"]
   [PTH.persistLowerCase|
 Bearer
-  token T.Text
+  code T.Text
 
 Refresh
-  token T.Text
+  code T.Text
 
 Token
   name T.Text

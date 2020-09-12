@@ -17,26 +17,18 @@ import Data.Functor (void)
 import Data.Pool (Pool)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.Text as T
-import Database (Bearer (Bearer), NamedToken (UserCode), Refresh (Refresh), upsertToken)
+import Database (Bearer (Bearer, bearerCode), NamedToken (AuthorizationCode, UserCode), Refresh (Refresh, refreshCode), Token (..), selectToken, tokenRefresh, upsertToken)
 import Database.Persist.Sql (SqlBackend)
-import Database.Persist.Sqlite (runSqlPool)
+import Database.Persist.Sqlite (Entity (Entity, entityVal), runSqlPool)
 import GHC.Generics (Generic)
-import Servant
-  ( Headers,
-    JSON,
-    NoContent (NoContent),
-    QueryParam,
-    StdMethod (GET),
-    Verb,
-    addHeader,
-    (:>),
-  )
+import Servant (Headers, JSON, NoContent (NoContent), QueryParam, StdMethod (GET), Verb, addHeader, (:>))
 import Servant.API (Get)
 import Servant.API.Generic (ToServantApi, genericApi, (:-))
 import Servant.API.Header (Header)
 import Servant.Server (Application)
 import Servant.Server.Generic (AsServerT, genericServe)
 import System.Random (randomRIO)
+import TwitchApi (RefreshResponse (..), TokenResponse (..), twitchAuthToken, twitchRefreshToken)
 import Url (Url (Url), urlEncode)
 
 genRandomState :: IO T.Text
@@ -56,7 +48,9 @@ type Redirect302 = Verb 'GET 302 '[JSON] NoContentWithLocation
 
 data Routes route = Routes
   { _authorize :: route :- "authorize" :> Redirect302,
-    _oauth2callback :: route :- "oauth2" :> "callback" :> QueryParam "code" T.Text :> QueryParam "state" T.Text :> QueryParam "scope" T.Text :> Get '[JSON] ()
+    _oauth2callback :: route :- "oauth2" :> "callback" :> QueryParam "code" T.Text :> QueryParam "state" T.Text :> QueryParam "scope" T.Text :> Get '[JSON] (),
+    _exchange :: route :- "exchange" :> Get '[JSON] (),
+    _refresh :: route :- "refresh" :> Get '[JSON] ()
   }
   deriving (Generic)
 
@@ -80,10 +74,32 @@ handlers Config {..} pool =
         -- \mCode mState mScope -> do
         \mCode _ _ -> case mCode of
           Just code -> liftIO . runStdoutLoggingT . void $ runSqlPool (upsertToken UserCode (Bearer code) (Refresh "...")) pool
+          Nothing -> pure (),
+      -- TODO:
+      -- - GET /subscribers
+      -- - GET /followers
+      _exchange = do
+        let redirectUri =
+              "http://localhost:"
+                <> (T.pack . show) portNumber
+                <> "/oauth2/callback"
+        mToken <- liftIO . runStdoutLoggingT $ runSqlPool (selectToken UserCode) pool
+        void $ case mToken of
+          Just Entity {entityVal = Token {..}} ->
+            ( do
+                TokenResponse {..} <- liftIO $ twitchAuthToken clientId clientSecret (bearerCode tokenCode) "authorization_code" redirectUri
+                void . liftIO . runStdoutLoggingT $ runSqlPool (upsertToken AuthorizationCode (Bearer access_token) (Refresh refresh_token)) pool
+            )
+          Nothing -> pure (),
+      _refresh = do
+        mToken <- liftIO . runStdoutLoggingT $ runSqlPool (selectToken AuthorizationCode) pool
+        void $ case mToken of
+          Just Entity {entityVal = Token {..}} ->
+            ( do
+                RefreshResponse {..} <- liftIO $ twitchRefreshToken clientId clientSecret (refreshCode tokenRefresh) "refresh_token"
+                void . liftIO . runStdoutLoggingT $ runSqlPool (upsertToken AuthorizationCode (Bearer access_token) (Refresh refresh_token)) pool
+            )
           Nothing -> pure ()
-          -- TODO:
-          -- - GET /subscribers
-          -- - GET /followers
     }
   where
     url =
