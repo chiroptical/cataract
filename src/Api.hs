@@ -1,39 +1,34 @@
+{-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
 {-# LANGUAGE DeriveGeneric #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE TypeOperators #-}
 
 module Api where
 
 import Config (Config (..))
-import Control.Monad (void)
-import Control.Monad.IO.Class (MonadIO, liftIO)
+import Control.Monad.IO.Class (MonadIO (liftIO))
+import Control.Monad.Logger (runStdoutLoggingT)
 import Data.Char (isAlphaNum)
+import Data.Functor (void)
+import Data.Pool (Pool)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.Text as T
-import Data.Time (getCurrentTime)
-import Database (insertToken_)
-import Database.Beam.Sqlite (runBeamSqlite)
-import Database.SQLite.Simple (close, open)
-import Database.Table.Token (TokenType (UserToken))
+import Database (NamedToken (AuthorizationCode, UserCode), Token (..), selectToken, tokenRefresh, upsertToken)
+import Database.Persist.Sql (SqlBackend)
+import Database.Persist.Sqlite (Entity (Entity, entityVal), runSqlPool)
 import GHC.Generics (Generic)
-import Servant
-  ( Headers,
-    JSON,
-    NoContent (NoContent),
-    QueryParam,
-    StdMethod (GET),
-    Verb,
-    addHeader,
-    (:>),
-  )
+import Servant (Headers, JSON, NoContent (NoContent), QueryParam, StdMethod (GET), Verb, addHeader, (:>))
 import Servant.API (Get)
 import Servant.API.Generic (ToServantApi, genericApi, (:-))
 import Servant.API.Header (Header)
 import Servant.Server (Application)
 import Servant.Server.Generic (AsServerT, genericServe)
 import System.Random (randomRIO)
+import TwitchApi (RefreshResponse (..), TokenResponse (..), twitchAuthToken, twitchRefreshToken)
 import Url (Url (Url), urlEncode)
 
 genRandomState :: IO T.Text
@@ -53,7 +48,9 @@ type Redirect302 = Verb 'GET 302 '[JSON] NoContentWithLocation
 
 data Routes route = Routes
   { _authorize :: route :- "authorize" :> Redirect302,
-    _oauth2callback :: route :- "oauth2" :> "callback" :> QueryParam "code" T.Text :> QueryParam "state" T.Text :> QueryParam "scope" T.Text :> Get '[JSON] ()
+    _oauth2callback :: route :- "oauth2" :> "callback" :> QueryParam "code" T.Text :> QueryParam "state" T.Text :> QueryParam "scope" T.Text :> Get '[JSON] (),
+    _exchange :: route :- "exchange" :> Get '[JSON] (),
+    _refresh :: route :- "refresh" :> Get '[JSON] ()
   }
   deriving (Generic)
 
@@ -62,8 +59,8 @@ api = genericApi (Proxy :: Proxy Routes)
 
 -- TODO:
 -- - IO should probably be a `Sem r a` or Transformer equivalent?
-handlers :: MonadIO m => Config -> Routes (AsServerT m)
-handlers Config {..} =
+handlers :: MonadIO m => Config -> Pool SqlBackend -> Routes (AsServerT m)
+handlers Config {..} pool =
   Routes
     { _authorize =
         -- TODO:
@@ -75,17 +72,34 @@ handlers Config {..} =
       -- - Should we POST the token back to the server?
       _oauth2callback =
         -- \mCode mState mScope -> do
-        \mCode _ _ -> do
-          conn <- liftIO $ open "test.db"
-          utcTime <- liftIO getCurrentTime
-          void $ case mCode of
-            Just code ->
-              liftIO $ runBeamSqlite conn $ insertToken_ UserToken code utcTime
-            Nothing -> error "..."
-          liftIO $ close conn
-          -- TODO:
-          -- - GET /subscribers
-          -- - GET /followers
+        \mCode _ _ -> case mCode of
+          Just code -> liftIO . runStdoutLoggingT . void $ runSqlPool (upsertToken UserCode code "...") pool
+          Nothing -> pure (),
+      -- TODO:
+      -- - GET /subscribers
+      -- - GET /followers
+      _exchange = do
+        let redirectUri =
+              "http://localhost:"
+                <> (T.pack . show) portNumber
+                <> "/oauth2/callback"
+        mToken <- liftIO . runStdoutLoggingT $ runSqlPool (selectToken UserCode) pool
+        void $ case mToken of
+          Just Entity {entityVal = Token {..}} ->
+            ( do
+                TokenResponse {..} <- liftIO $ twitchAuthToken clientId clientSecret tokenCode "authorization_code" redirectUri
+                void . liftIO . runStdoutLoggingT $ runSqlPool (upsertToken AuthorizationCode access_token refresh_token) pool
+            )
+          Nothing -> pure (),
+      _refresh = do
+        mToken <- liftIO . runStdoutLoggingT $ runSqlPool (selectToken AuthorizationCode) pool
+        void $ case mToken of
+          Just Entity {entityVal = Token {..}} ->
+            ( do
+                RefreshResponse {..} <- liftIO $ twitchRefreshToken clientId clientSecret tokenRefresh "refresh_token"
+                void . liftIO . runStdoutLoggingT $ runSqlPool (upsertToken AuthorizationCode access_token refresh_token) pool
+            )
+          Nothing -> pure ()
     }
   where
     url =
@@ -102,5 +116,5 @@ handlers Config {..} =
             ("scope", requiredScopes)
           ]
 
-app :: Config -> Application
-app = genericServe . handlers
+app :: Config -> Pool SqlBackend -> Application
+app config pool = genericServe (handlers config pool)
