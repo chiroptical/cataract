@@ -17,7 +17,7 @@ import Data.Functor (void)
 import Data.Pool (Pool)
 import Data.Proxy (Proxy (Proxy))
 import qualified Data.Text as T
-import Database (Bearer (Bearer, bearerCode), NamedToken (AuthorizationCode, UserCode), Refresh (Refresh, refreshCode), Token (..), selectToken, tokenRefresh, upsertToken)
+import Database (NamedToken (AuthorizationCode, UserCode), Token (..), selectToken, tokenRefresh, upsertToken)
 import Database.Persist.Sql (SqlBackend)
 import Database.Persist.Sqlite (Entity (Entity, entityVal), runSqlPool)
 import GHC.Generics (Generic)
@@ -73,7 +73,7 @@ handlers Config {..} pool =
       _oauth2callback =
         -- \mCode mState mScope -> do
         \mCode _ _ -> case mCode of
-          Just code -> liftIO . runStdoutLoggingT . void $ runSqlPool (upsertToken UserCode (Bearer code) (Refresh "...")) pool
+          Just code -> liftIO . runStdoutLoggingT . void $ runSqlPool (upsertToken UserCode code "...") pool
           Nothing -> pure (),
       -- TODO:
       -- - GET /subscribers
@@ -87,8 +87,8 @@ handlers Config {..} pool =
         void $ case mToken of
           Just Entity {entityVal = Token {..}} ->
             ( do
-                TokenResponse {..} <- liftIO $ twitchAuthToken clientId clientSecret (bearerCode tokenCode) "authorization_code" redirectUri
-                void . liftIO . runStdoutLoggingT $ runSqlPool (upsertToken AuthorizationCode (Bearer access_token) (Refresh refresh_token)) pool
+                TokenResponse {..} <- liftIO $ twitchAuthToken clientId clientSecret tokenCode "authorization_code" redirectUri
+                void . liftIO . runStdoutLoggingT $ runSqlPool (upsertToken AuthorizationCode access_token refresh_token) pool
             )
           Nothing -> pure (),
       _refresh = do
@@ -96,8 +96,8 @@ handlers Config {..} pool =
         void $ case mToken of
           Just Entity {entityVal = Token {..}} ->
             ( do
-                RefreshResponse {..} <- liftIO $ twitchRefreshToken clientId clientSecret (refreshCode tokenRefresh) "refresh_token"
-                void . liftIO . runStdoutLoggingT $ runSqlPool (upsertToken AuthorizationCode (Bearer access_token) (Refresh refresh_token)) pool
+                RefreshResponse {..} <- liftIO $ twitchRefreshToken clientId clientSecret tokenRefresh "refresh_token"
+                void . liftIO . runStdoutLoggingT $ runSqlPool (upsertToken AuthorizationCode access_token refresh_token) pool
             )
           Nothing -> pure ()
     }

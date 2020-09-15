@@ -18,7 +18,8 @@ data Config = Config
   { portNumber :: Int,
     clientId :: T.Text,
     clientSecret :: T.Text,
-    requiredScopes :: T.Text
+    requiredScopes :: T.Text,
+    databaseFileName :: T.Text
   }
   deriving (Show, Eq, Generic, FromJSON)
 
@@ -33,3 +34,7 @@ instance YamlSchema Config where
           "requiredScopes"
           "user:read:email channel:read:subscriptions"
           "The required Twitch scopes"
+        <*> optionalFieldWithDefault
+          "databaseFileName"
+          "test.db"
+          "The name of the sqlite database to persist data"

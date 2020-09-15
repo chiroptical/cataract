@@ -24,7 +24,7 @@ main = do
     Just config@Config {..} ->
       -- TODO: Should have connection pool to feed to app
       do
-        pool <- runStdoutLoggingT $ createSqlitePool "WAL=off purple.db" 5
+        pool <- runStdoutLoggingT $ createSqlitePool ("WAL=off " <> databaseFileName) 5
         runStdoutLoggingT $ runSqlPool makeTables pool
         run 8081 (app config pool)
     Nothing -> pure ()
