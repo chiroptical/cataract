@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 0a6b0b9100d61155d08b5b226d885de5f58955c8c38b96b16c907784ea4a7cc8
+-- hash: 4fae8c1f9cd6a0a5f6e5c976e37680c24b06d831f38efa3ea8d75bb251e57336
 
 name:           haskell-twitch-overlay
 version:        0.1.0.0
@@ -30,7 +30,8 @@ library
       Api
       Config
       Database
-      TwitchApi
+      TwitchApi.Auth
+      TwitchApi.Helix
       Url
   other-modules:
       Paths_haskell_twitch_overlay

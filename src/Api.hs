@@ -10,6 +10,7 @@
 module Api where
 
 import Config (Config (..))
+import Control.Exception (throwIO)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Logger (runStdoutLoggingT)
 import Data.Char (isAlphaNum)
@@ -21,14 +22,19 @@ import Database (NamedToken (AuthorizationCode, UserCode), Token (..), selectTok
 import Database.Persist.Sql (SqlBackend)
 import Database.Persist.Sqlite (Entity (Entity, entityVal), runSqlPool)
 import GHC.Generics (Generic)
+import Network.HTTP.Client (defaultManagerSettings, newManager)
 import Servant (Headers, JSON, NoContent (NoContent), QueryParam, StdMethod (GET), Verb, addHeader, (:>))
 import Servant.API (Get)
 import Servant.API.Generic (ToServantApi, genericApi, (:-))
 import Servant.API.Header (Header)
+import Servant.Client (BaseUrl (BaseUrl), mkClientEnv, runClientM)
+import Servant.Client.Core.Reexport (Scheme (Http))
+import Servant.Client.Generic (AsClientT, genericClientHoist)
 import Servant.Server (Application)
 import Servant.Server.Generic (AsServerT, genericServe)
 import System.Random (randomRIO)
-import TwitchApi (RefreshResponse (..), TokenResponse (..), twitchAuthToken, twitchRefreshToken)
+import TwitchApi.Auth (RefreshResponse (..), TokenResponse (..), twitchAuthToken, twitchRefreshToken)
+import TwitchApi.Helix (Followers (Followers), User, twitchFollowers, twitchSubscribers, twitchUsers)
 import Url (Url (Url), urlEncode)
 
 genRandomState :: IO T.Text
@@ -50,7 +56,10 @@ data Routes route = Routes
   { _authorize :: route :- "authorize" :> Redirect302,
     _oauth2callback :: route :- "oauth2" :> "callback" :> QueryParam "code" T.Text :> QueryParam "state" T.Text :> QueryParam "scope" T.Text :> Get '[JSON] (),
     _exchange :: route :- "exchange" :> Get '[JSON] (),
-    _refresh :: route :- "refresh" :> Get '[JSON] ()
+    _refresh :: route :- "refresh" :> Get '[JSON] (),
+    _subscribers :: route :- "subscribers" :> Get '[JSON] Int,
+    _users :: route :- "users" :> Get '[JSON] [User],
+    _followers :: route :- "followers" :> Get '[JSON] Followers
   }
   deriving (Generic)
 
@@ -60,7 +69,7 @@ api = genericApi (Proxy :: Proxy Routes)
 -- TODO:
 -- - IO should probably be a `Sem r a` or Transformer equivalent?
 handlers :: MonadIO m => Config -> Pool SqlBackend -> Routes (AsServerT m)
-handlers Config {..} pool =
+handlers config@Config {..} pool =
   Routes
     { _authorize =
         -- TODO:
@@ -99,7 +108,27 @@ handlers Config {..} pool =
                 RefreshResponse {..} <- liftIO $ twitchRefreshToken clientId clientSecret tokenRefresh "refresh_token"
                 void . liftIO . runStdoutLoggingT $ runSqlPool (upsertToken AuthorizationCode access_token refresh_token) pool
             )
-          Nothing -> pure ()
+          Nothing -> pure (),
+      -- TODO:
+      -- - _subscribers and _users shouldn't auto-refresh token, we should try the call and fallback to refresh
+      _subscribers = do
+        liftIO $ refreshAuthorizationCode config
+        mToken <- liftIO . runStdoutLoggingT $ runSqlPool (selectToken AuthorizationCode) pool
+        case mToken of
+          Just Entity {entityVal = Token {..}} -> liftIO $ twitchSubscribers "131787842" tokenCode clientId
+          Nothing -> pure 0,
+      _users = do
+        liftIO $ refreshAuthorizationCode config
+        mToken <- liftIO . runStdoutLoggingT $ runSqlPool (selectToken AuthorizationCode) pool
+        case mToken of
+          Just Entity {entityVal = Token {..}} -> liftIO $ twitchUsers "chiroptical" tokenCode clientId
+          Nothing -> pure [],
+      _followers = do
+        liftIO $ refreshAuthorizationCode config
+        mToken <- liftIO . runStdoutLoggingT $ runSqlPool (selectToken AuthorizationCode) pool
+        case mToken of
+          Just Entity {entityVal = Token {..}} -> liftIO $ twitchFollowers "131787842" tokenCode clientId
+          Nothing -> pure $ Followers 0
     }
   where
     url =
@@ -118,3 +147,15 @@ handlers Config {..} pool =
 
 app :: Config -> Pool SqlBackend -> Application
 app config pool = genericServe (handlers config pool)
+
+clientRoutes :: Config -> Routes (AsClientT IO)
+clientRoutes Config {..} =
+  genericClientHoist
+    ( \x -> do
+        manager' <- newManager defaultManagerSettings
+        let env = mkClientEnv manager' (BaseUrl Http "localhost" portNumber "")
+        runClientM x env >>= either throwIO return
+    )
+
+refreshAuthorizationCode :: Config -> IO ()
+refreshAuthorizationCode config = _refresh (clientRoutes config)

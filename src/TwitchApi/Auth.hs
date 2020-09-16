@@ -7,7 +7,7 @@
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TypeOperators #-}
 
-module TwitchApi where
+module TwitchApi.Auth where
 
 import Data.Aeson (FromJSON, ToJSON)
 import Data.Proxy (Proxy (Proxy))
