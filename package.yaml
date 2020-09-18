@@ -46,6 +46,7 @@ dependencies:
 - transformers
 - monad-logger
 - resource-pool
+- lucid
 
 library:
   source-dirs: src

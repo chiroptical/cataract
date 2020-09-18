@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: 4fae8c1f9cd6a0a5f6e5c976e37680c24b06d831f38efa3ea8d75bb251e57336
+-- hash: bdc118e85b3b5c2d8fe6c80d880667bd2f08065aaafbfb32c04683cb7aaaef20
 
 name:           haskell-twitch-overlay
 version:        0.1.0.0
@@ -46,6 +46,7 @@ library
     , http-client-tls
     , http-media
     , load-env
+    , lucid
     , monad-logger
     , path
     , path-io
@@ -83,6 +84,7 @@ executable haskell-twitch-overlay-exe
     , http-client-tls
     , http-media
     , load-env
+    , lucid
     , monad-logger
     , path
     , path-io
@@ -121,6 +123,7 @@ test-suite haskell-twitch-overlay-test
     , http-client-tls
     , http-media
     , load-env
+    , lucid
     , monad-logger
     , path
     , path-io

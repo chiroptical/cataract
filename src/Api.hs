@@ -1,7 +1,10 @@
 {-# LANGUAGE AllowAmbiguousTypes #-}
 {-# LANGUAGE DataKinds #-}
+{-# LANGUAGE DeriveAnyClass #-}
 {-# LANGUAGE DeriveGeneric #-}
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TypeFamilies #-}
@@ -13,25 +16,29 @@ import Config (Config (..))
 import Control.Exception (throwIO)
 import Control.Monad.IO.Class (MonadIO (liftIO))
 import Control.Monad.Logger (runStdoutLoggingT)
+import Data.Aeson (FromJSON, ToJSON)
 import Data.Char (isAlphaNum)
 import Data.Functor (void)
 import Data.Pool (Pool)
-import Data.Proxy (Proxy (Proxy))
 import qualified Data.Text as T
 import Database (NamedToken (AuthorizationCode, UserCode), Token (..), selectToken, tokenRefresh, upsertToken)
 import Database.Persist.Sql (SqlBackend)
 import Database.Persist.Sqlite (Entity (Entity, entityVal), runSqlPool)
 import GHC.Generics (Generic)
+import Lucid (ToHtml (toHtml, toHtmlRaw), div_, h1_, rel_, style_)
+import Lucid.Base (Html, renderBS)
+import Lucid.Html5 (head_, href_, link_)
 import Network.HTTP.Client (defaultManagerSettings, newManager)
-import Servant (Headers, JSON, NoContent (NoContent), QueryParam, StdMethod (GET), Verb, addHeader, (:>))
+import Network.HTTP.Media ((//), (/:))
+import Servant (Accept (..), Headers, JSON, MimeRender (..), NoContent (NoContent), QueryParam, Raw, StdMethod (GET), Verb, addHeader, serveDirectoryFileServer, (:>))
 import Servant.API (Get)
-import Servant.API.Generic (ToServantApi, genericApi, (:-))
+import Servant.API.Generic (AsApi, ToServant, toServant, (:-))
 import Servant.API.Header (Header)
 import Servant.Client (BaseUrl (BaseUrl), mkClientEnv, runClientM)
 import Servant.Client.Core.Reexport (Scheme (Http))
 import Servant.Client.Generic (AsClientT, genericClientHoist)
 import Servant.Server (Application)
-import Servant.Server.Generic (AsServerT, genericServe)
+import Servant.Server.Generic (AsServer, AsServerT, genericServe)
 import System.Random (randomRIO)
 import TwitchApi.Auth (RefreshResponse (..), TokenResponse (..), twitchAuthToken, twitchRefreshToken)
 import TwitchApi.Helix (Followers (Followers), User, twitchFollowers, twitchSubscribers, twitchUsers)
@@ -48,6 +55,41 @@ genRandomState = T.pack <$> go 32 []
         then go (n - 1) (char : acc)
         else go n acc
 
+data HTMLLucid
+
+data Overlay = Overlay
+  { subscribers :: Int,
+    subscribersGoal :: Int,
+    followers :: Int,
+    followerGoal :: Int
+  }
+  deriving (Generic, ToJSON, FromJSON)
+
+showText :: Show a => a -> T.Text
+showText = T.pack . show
+
+instance ToHtml Overlay where
+  toHtmlRaw = toHtml
+  toHtml Overlay {..} = do
+    head_ $ do
+      link_ [rel_ "stylesheet", href_ "/static/styles.css"]
+    div_
+      ( do
+          let subs = "Subscribers: " <> showText subscribers <> "/" <> showText subscribersGoal
+              fols = "Followers: " <> showText followers <> "/" <> showText followerGoal
+          h1_ . toHtml $ subs
+          h1_ . toHtml $ fols
+      )
+
+instance Accept HTMLLucid where
+  contentType _ = "text" // "html" /: ("charset", "utf-8")
+
+instance ToHtml a => MimeRender HTMLLucid a where
+  mimeRender _ = renderBS . toHtml
+
+instance MimeRender HTMLLucid (Html a) where
+  mimeRender _ = renderBS
+
 type NoContentWithLocation = Headers (Header "Location" T.Text ': '[]) NoContent
 
 type Redirect302 = Verb 'GET 302 '[JSON] NoContentWithLocation
@@ -59,12 +101,22 @@ data Routes route = Routes
     _refresh :: route :- "refresh" :> Get '[JSON] (),
     _subscribers :: route :- "subscribers" :> Get '[JSON] Int,
     _users :: route :- "users" :> Get '[JSON] [User],
-    _followers :: route :- "followers" :> Get '[JSON] Followers
+    _followers :: route :- "followers" :> Get '[JSON] Followers,
+    _overlay :: route :- "overlay" :> Get '[JSON, HTMLLucid] Overlay,
+    _static :: route :- "static" :> ToServant StaticContent AsApi
   }
   deriving (Generic)
 
-api :: Proxy (ToServantApi Routes)
-api = genericApi (Proxy :: Proxy Routes)
+data StaticContent route = StaticContent
+  { _staticContent :: route :- Raw
+  }
+  deriving (Generic)
+
+staticContentHandler :: MonadIO m => StaticContent (AsServerT m)
+staticContentHandler =
+  StaticContent
+    { _staticContent = serveDirectoryFileServer "./static"
+    }
 
 -- TODO:
 -- - IO should probably be a `Sem r a` or Transformer equivalent?
@@ -115,20 +167,26 @@ handlers config@Config {..} pool =
         liftIO $ refreshAuthorizationCode config
         mToken <- liftIO . runStdoutLoggingT $ runSqlPool (selectToken AuthorizationCode) pool
         case mToken of
-          Just Entity {entityVal = Token {..}} -> liftIO $ twitchSubscribers "131787842" tokenCode clientId
+          Just Entity {entityVal = Token {..}} -> liftIO $ twitchSubscribers (T.pack . show $ streamerId) tokenCode clientId
           Nothing -> pure 0,
       _users = do
         liftIO $ refreshAuthorizationCode config
         mToken <- liftIO . runStdoutLoggingT $ runSqlPool (selectToken AuthorizationCode) pool
         case mToken of
-          Just Entity {entityVal = Token {..}} -> liftIO $ twitchUsers "chiroptical" tokenCode clientId
+          Just Entity {entityVal = Token {..}} -> liftIO $ twitchUsers streamerName tokenCode clientId
           Nothing -> pure [],
       _followers = do
         liftIO $ refreshAuthorizationCode config
         mToken <- liftIO . runStdoutLoggingT $ runSqlPool (selectToken AuthorizationCode) pool
         case mToken of
-          Just Entity {entityVal = Token {..}} -> liftIO $ twitchFollowers "131787842" tokenCode clientId
-          Nothing -> pure $ Followers 0
+          Just Entity {entityVal = Token {..}} -> liftIO $ twitchFollowers (T.pack . show $ streamerId) tokenCode clientId
+          Nothing -> pure $ Followers 0,
+      _overlay = do
+        subs <- liftIO $ getSubscribers config
+        fols <- liftIO $ getFollowers config
+        pure $ Overlay {subscribers = subs, followers = fols, subscribersGoal = streamerSubscriberGoal, followerGoal = streamerFollowerGoal},
+      _static =
+        toServant staticContentHandler
     }
   where
     url =
@@ -159,3 +217,11 @@ clientRoutes Config {..} =
 
 refreshAuthorizationCode :: Config -> IO ()
 refreshAuthorizationCode config = _refresh (clientRoutes config)
+
+getSubscribers :: Config -> IO Int
+getSubscribers config = _subscribers (clientRoutes config)
+
+getFollowers :: Config -> IO Int
+getFollowers config = do
+  Followers n <- _followers (clientRoutes config)
+  pure n
