@@ -47,6 +47,7 @@ dependencies:
 - monad-logger
 - resource-pool
 - lucid
+- beam-core
 
 library:
   source-dirs: src

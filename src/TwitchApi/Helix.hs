@@ -43,6 +43,11 @@ instance FromJSON a => FromJSON (Response a) where
       Nothing -> pure Nothing
     return $ Response subs cursor
 
+data Followers = Followers
+  { total :: Int
+  }
+  deriving (Show, Eq, Generic, ToJSON, FromJSON)
+
 data Subscriber = Subscriber
   { broadcaster_id :: T.Text,
     broadcaster_name :: T.Text,
@@ -58,11 +63,6 @@ data User = User
   { id :: T.Text,
     display_name :: T.Text,
     view_count :: Int
-  }
-  deriving (Show, Eq, Generic, ToJSON, FromJSON)
-
-data Followers = Followers
-  { total :: Int
   }
   deriving (Show, Eq, Generic, ToJSON, FromJSON)
 
@@ -105,5 +105,7 @@ twitchUsers login token clientId = do
   response <- _users clientRoutes login ("Bearer " <> token) clientId
   return $ entries response
 
-twitchFollowers :: T.Text -> T.Text -> T.Text -> IO Followers
-twitchFollowers login token clientId = _followers clientRoutes login ("Bearer " <> token) clientId
+twitchFollowers :: T.Text -> T.Text -> T.Text -> IO Int
+twitchFollowers login token clientId = do
+  Followers n <- _followers clientRoutes login ("Bearer " <> token) clientId
+  pure n

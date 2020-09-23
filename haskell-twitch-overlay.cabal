@@ -4,7 +4,7 @@ cabal-version: 1.12
 --
 -- see: https://github.com/sol/hpack
 --
--- hash: bdc118e85b3b5c2d8fe6c80d880667bd2f08065aaafbfb32c04683cb7aaaef20
+-- hash: dfc1826f3bc9badf4273d9b479a78e23befbd41959d2b7f26690aff911ceec5e
 
 name:           haskell-twitch-overlay
 version:        0.1.0.0
@@ -40,6 +40,7 @@ library
   build-depends:
       aeson
     , base >=4.7 && <5
+    , beam-core
     , bytestring
     , esqueleto
     , http-client
@@ -77,6 +78,7 @@ executable haskell-twitch-overlay-exe
   build-depends:
       aeson
     , base >=4.7 && <5
+    , beam-core
     , bytestring
     , esqueleto
     , haskell-twitch-overlay
@@ -116,6 +118,7 @@ test-suite haskell-twitch-overlay-test
   build-depends:
       aeson
     , base >=4.7 && <5
+    , beam-core
     , bytestring
     , esqueleto
     , haskell-twitch-overlay

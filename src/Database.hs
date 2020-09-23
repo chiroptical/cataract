@@ -22,10 +22,17 @@ Token
   name T.Text
   code T.Text
   refresh T.Text
-  UniqueName name
+  UniqueToken name
+
+Metric
+  name T.Text
+  number Int
+  UniqueMetric name
 |]
 
 data NamedToken = UserCode | AuthorizationCode deriving (Show, Eq)
+
+data NamedMetric = Subscribers | Followers deriving (Show, Eq)
 
 deriving instance Show Token
 
@@ -44,5 +51,15 @@ upsertToken name bearer refresh = upsert record [TokenCode =. bearer, TokenRefre
 
 selectToken :: MonadIO m => NamedToken -> ReaderT SqlBackend m (Maybe (Entity Token))
 selectToken name = selectFirst [TokenName ==. token] []
+  where
+    token = showText name
+
+upsertMetric :: MonadIO m => NamedMetric -> Int -> ReaderT SqlBackend m (Entity Metric)
+upsertMetric name number = upsert record [MetricNumber =. number]
+  where
+    record = Metric (showText name) number
+
+selectMetric :: MonadIO m => NamedMetric -> ReaderT SqlBackend m (Maybe (Entity Metric))
+selectMetric name = selectFirst [MetricName ==. token] []
   where
     token = showText name

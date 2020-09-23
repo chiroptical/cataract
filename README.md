@@ -2,19 +2,34 @@
 
 [![Chiroptical](https://img.shields.io/badge/twitch.tv-chiroptical-purple?logo=twitch&style=for-the-badge)](https://twitch.tv/chiroptical)
 
-Next Steps
+Next steps
 ---
 
-We now can serve static content from `./static`, now we need a `index.js` which
-contains a Purescript app.  We need to build this Purescript app and add
-features. Need to build a `make serve` function to build the purescript app
-and then run `stack run`.
+- Finish pulling out `liftIO`s from `src/Api.hs` and other locations
+- Store goals in metrics table on startup
+- Provide endpoints to get goals
+- Frontend should display subscribers, followers, and goals for each
+- Figure out websockets to update frontend based on backend requests, e.g. first feature request
 
 Feature Requests
 ---
 
-- `curl -X POST <frontend>/overlay?brb={true,false,toggle}` which will set, unset, or
+- `curl -X POST /overlay?brb={true,false,toggle}&time=5` which will set, unset, or
   toggle some "Be Right Back" text.
-- Respond to subscription, follow, and bit Twitch requests
-  - Twitch sends `GET <backend>/...`, we send `POST <frontend>/new{Notification}?name={}&months={}...`
+  - Optionally, `brb=true&time=N` will show brb screen for `N` minutes
 - Display snail emojis when chat enters snail emojis, i.e. get chat involved
+- Respond to subscription, follow, and bit Twitch requests
+  - Twitch sends `GET /...`, websocket communication to update Purescript
+
+Questions
+---
+
+- Should we switch back to Beam using in `stack.yaml` in `extra-deps`?
+  - An upsert command is now better supported
+
+```
+- git: https://github.com/haskell-beam/beam
+  commit: <commit>
+  subdirs:
+  - beam-core
+```
