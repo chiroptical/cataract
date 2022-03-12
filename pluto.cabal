@@ -1,0 +1,194 @@
+cabal-version: 1.12
+
+-- This file has been generated from package.yaml by hpack version 0.34.6.
+--
+-- see: https://github.com/sol/hpack
+
+name:           pluto
+version:        0.0.0
+build-type:     Simple
+
+flag dev
+  description: Turn on development settings, like auto-reload templates.
+  manual: False
+  default: False
+
+flag library-only
+  description: Build for use with "yesod devel"
+  manual: False
+  default: False
+
+library
+  exposed-modules:
+      Application
+      Foundation
+      Handler.Comment
+      Handler.Common
+      Handler.Home
+      Handler.Profile
+      Import
+      Import.NoFoundation
+      Model
+      Settings
+      Settings.StaticFiles
+  other-modules:
+      Paths_pluto
+  hs-source-dirs:
+      src
+  build-depends:
+      aeson
+    , base
+    , bytestring
+    , case-insensitive
+    , classy-prelude
+    , classy-prelude-conduit
+    , classy-prelude-yesod
+    , conduit
+    , containers
+    , data-default
+    , directory
+    , fast-logger
+    , file-embed
+    , foreign-store
+    , hjsmin
+    , http-client-tls
+    , http-conduit
+    , monad-control
+    , monad-logger
+    , persistent
+    , persistent-postgresql
+    , persistent-template
+    , safe
+    , shakespeare
+    , template-haskell
+    , text
+    , time
+    , unordered-containers
+    , vector
+    , wai
+    , wai-extra
+    , wai-logger
+    , warp
+    , yaml
+    , yesod
+    , yesod-auth
+    , yesod-core
+    , yesod-form
+    , yesod-static
+  if (flag(dev)) || (flag(library-only))
+    ghc-options: -Wall -fwarn-tabs -O0
+    cpp-options: -DDEVELOPMENT
+  else
+    ghc-options: -Wall -fwarn-tabs -O2
+  default-language: Haskell2010
+
+executable pluto
+  main-is: main.hs
+  other-modules:
+      DevelMain
+      Paths_pluto
+  hs-source-dirs:
+      app
+  ghc-options: -threaded -rtsopts -with-rtsopts=-N
+  build-depends:
+      aeson
+    , base
+    , bytestring
+    , case-insensitive
+    , classy-prelude
+    , classy-prelude-conduit
+    , classy-prelude-yesod
+    , conduit
+    , containers
+    , data-default
+    , directory
+    , fast-logger
+    , file-embed
+    , foreign-store
+    , hjsmin
+    , http-client-tls
+    , http-conduit
+    , monad-control
+    , monad-logger
+    , persistent
+    , persistent-postgresql
+    , persistent-template
+    , pluto
+    , safe
+    , shakespeare
+    , template-haskell
+    , text
+    , time
+    , unordered-containers
+    , vector
+    , wai
+    , wai-extra
+    , wai-logger
+    , warp
+    , yaml
+    , yesod
+    , yesod-auth
+    , yesod-core
+    , yesod-form
+    , yesod-static
+  if flag(library-only)
+    buildable: False
+  default-language: Haskell2010
+
+test-suite pluto-test
+  type: exitcode-stdio-1.0
+  main-is: Spec.hs
+  other-modules:
+      Handler.CommentSpec
+      Handler.CommonSpec
+      Handler.HomeSpec
+      Handler.ProfileSpec
+      TestImport
+      Paths_pluto
+  hs-source-dirs:
+      test
+  ghc-options: -Wall
+  build-depends:
+      aeson
+    , base
+    , bytestring
+    , case-insensitive
+    , classy-prelude
+    , classy-prelude-conduit
+    , classy-prelude-yesod
+    , conduit
+    , containers
+    , data-default
+    , directory
+    , fast-logger
+    , file-embed
+    , foreign-store
+    , hjsmin
+    , hspec >=2.0.0
+    , http-client-tls
+    , http-conduit
+    , monad-control
+    , monad-logger
+    , persistent
+    , persistent-postgresql
+    , persistent-template
+    , pluto
+    , safe
+    , shakespeare
+    , template-haskell
+    , text
+    , time
+    , unordered-containers
+    , vector
+    , wai
+    , wai-extra
+    , wai-logger
+    , warp
+    , yaml
+    , yesod
+    , yesod-auth
+    , yesod-core
+    , yesod-form
+    , yesod-static
+    , yesod-test
+  default-language: Haskell2010

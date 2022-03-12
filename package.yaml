@@ -1,0 +1,99 @@
+name:    pluto
+version: "0.0.0"
+
+dependencies:
+
+- base
+- yesod
+- yesod-core
+- yesod-auth
+- yesod-static
+- yesod-form
+- classy-prelude
+- classy-prelude-conduit
+- classy-prelude-yesod
+- bytestring
+- text
+- persistent
+- persistent-postgresql
+- persistent-template
+- template-haskell
+- shakespeare
+- hjsmin
+- monad-control
+- wai-extra
+- yaml
+- http-client-tls
+- http-conduit
+- directory
+- warp
+- data-default
+- aeson
+- conduit
+- monad-logger
+- fast-logger
+- wai-logger
+- file-embed
+- safe
+- unordered-containers
+- containers
+- vector
+- time
+- case-insensitive
+- wai
+- foreign-store
+
+# The library contains all of our application code. The executable
+# defined below is just a thin wrapper.
+library:
+  source-dirs: src
+  when:
+  - condition: (flag(dev)) || (flag(library-only))
+    then:
+      ghc-options:
+      - -Wall
+      - -fwarn-tabs
+      - -O0
+      cpp-options: -DDEVELOPMENT
+    else:
+      ghc-options:
+      - -Wall
+      - -fwarn-tabs
+      - -O2
+
+# Runnable executable for our application
+executables:
+  pluto:
+    main: main.hs
+    source-dirs: app
+    ghc-options:
+    - -threaded
+    - -rtsopts
+    - -with-rtsopts=-N
+    dependencies:
+    - pluto
+    when:
+    - condition: flag(library-only)
+      buildable: false
+
+# Test suite
+tests:
+  pluto-test:
+    main: Spec.hs
+    source-dirs: test
+    ghc-options: -Wall
+    dependencies:
+    - pluto
+    - hspec >=2.0.0
+    - yesod-test
+
+# Define flags used by "yesod devel" to make compilation faster
+flags:
+  library-only:
+    description: Build for use with "yesod devel"
+    manual: false
+    default: false
+  dev:
+    description: Turn on development settings, like auto-reload templates.
+    manual: false
+    default: false
