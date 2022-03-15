@@ -3,7 +3,7 @@ version: "0.0.0"
 
 dependencies:
 
-- base
+- base >= 4.7 && < 5
 - yesod
 - yesod-core
 - yesod-auth
@@ -47,19 +47,10 @@ dependencies:
 # defined below is just a thin wrapper.
 library:
   source-dirs: src
-  when:
-  - condition: (flag(dev)) || (flag(library-only))
-    then:
-      ghc-options:
-      - -Wall
-      - -fwarn-tabs
-      - -O0
-      cpp-options: -DDEVELOPMENT
-    else:
-      ghc-options:
-      - -Wall
-      - -fwarn-tabs
-      - -O2
+  ghc-options:
+  - -Wall
+  - -fwarn-tabs
+  - -O2
 
 # Runnable executable for our application
 executables:
@@ -72,9 +63,6 @@ executables:
     - -with-rtsopts=-N
     dependencies:
     - pluto
-    when:
-    - condition: flag(library-only)
-      buildable: false
 
 # Test suite
 tests:
@@ -86,14 +74,3 @@ tests:
     - pluto
     - hspec >=2.0.0
     - yesod-test
-
-# Define flags used by "yesod devel" to make compilation faster
-flags:
-  library-only:
-    description: Build for use with "yesod devel"
-    manual: false
-    default: false
-  dev:
-    description: Turn on development settings, like auto-reload templates.
-    manual: false
-    default: false

@@ -8,16 +8,6 @@ name:           pluto
 version:        0.0.0
 build-type:     Simple
 
-flag dev
-  description: Turn on development settings, like auto-reload templates.
-  manual: False
-  default: False
-
-flag library-only
-  description: Build for use with "yesod devel"
-  manual: False
-  default: False
-
 library
   exposed-modules:
       Application
@@ -35,6 +25,7 @@ library
       Paths_pluto
   hs-source-dirs:
       src
+  ghc-options: -Wall -fwarn-tabs -O2
   build-depends:
       aeson
     , base
@@ -75,11 +66,6 @@ library
     , yesod-core
     , yesod-form
     , yesod-static
-  if (flag(dev)) || (flag(library-only))
-    ghc-options: -Wall -fwarn-tabs -O0
-    cpp-options: -DDEVELOPMENT
-  else
-    ghc-options: -Wall -fwarn-tabs -O2
   default-language: Haskell2010
 
 executable pluto
@@ -131,8 +117,6 @@ executable pluto
     , yesod-core
     , yesod-form
     , yesod-static
-  if flag(library-only)
-    buildable: False
   default-language: Haskell2010
 
 test-suite pluto-test
