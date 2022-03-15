@@ -4,6 +4,9 @@ build: hpack
 hpack:
 	hpack .
 
+run: hpack
+	cabal run	pluto
+
 docker-build:
 	nix-build -A docker
 	docker load -i result
@@ -20,4 +23,4 @@ format-haskell:
 
 format: format-nix format-haskell
 
-.PHONY: build hpack docker-build docker-run format-nix format-haskell format
+.PHONY: build hpack run docker-build docker-run format-nix format-haskell format

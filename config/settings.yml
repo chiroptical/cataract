@@ -13,17 +13,17 @@ ip-from-header: "_env:YESOD_IP_FROM_HEADER:false"
 
 # By default, `yesod devel` runs in development, and built executables use
 # production settings (see below). To override this, use the following:
-development: false
+development: "_env:DEVELOPMENT:false"
 
 # Optional values with the following production defaults.
 # In development, they default to the inverse.
 #
-# detailed-logging: false
-# should-log-all: false
-# reload-templates: false
-# mutable-static: false
-# skip-combining: false
-# auth-dummy-login : false
+detailed-logging: "_env:YESOD_DETAILED_LOGGING:false"
+should-log-all: "_env:YESOD_SHOULD_LOG_ALL:false"
+reload-templates: "_env:YESOD_RELOAD_TEMPLATES:false"
+mutable-static: "_env:YESOD_MUTABLE_STATIC:false"
+skip-combining: "_env:YESOD_SKIP_COMBINING:false"
+auth-dummy-login : "_env:YESOD_AUTH_DUMMY_LOGIN:false"
 
 # NB: If you need a numeric value (e.g. 123) to parse as a String, wrap it in single quotes (e.g. "_env:YESOD_PGPASS:'123'")
 # See https://github.com/yesodweb/yesod/wiki/Configuration#parsing-numeric-values-as-strings
