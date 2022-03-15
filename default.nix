@@ -39,6 +39,7 @@
     contents = with pkgs; [
       bash
       coreutils
+      curl
     ];
     runAsRoot = let
       getFileName = fileName: with pkgs.lib; last (splitString "/" fileName);
@@ -61,6 +62,7 @@
         "${exe}/bin/pluto"
       ];
     };
+    created = "now";
   };
 in {
   inherit shell;
