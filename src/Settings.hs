@@ -74,8 +74,6 @@ data AppSettings = AppSettings
 
 instance FromJSON AppSettings where
   parseJSON = withObject "AppSettings" $ \o -> do
-    -- TODO: Need to handle default dev without CPP
-    let defaultDev = True
     appStaticDir <- o .: "static-dir"
     appDatabaseConf <- o .: "database"
     appRoot <- o .:? "approot"
@@ -83,7 +81,7 @@ instance FromJSON AppSettings where
     appPort <- o .: "port"
     appIpFromHeader <- o .: "ip-from-header"
 
-    dev <- o .:? "development" .!= defaultDev
+    dev <- o .: "development"
 
     appDetailedRequestLogging <- o .:? "detailed-logging" .!= dev
     appShouldLogAll <- o .:? "should-log-all" .!= dev

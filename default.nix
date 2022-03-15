@@ -47,17 +47,23 @@
       staticFileName = getFileName static;
       config = "${./config}";
       configFileName = getFileName config;
+      templates = "${./templates}";
+      templatesFileName = getFileName templates;
     in ''
-      mkdir /data
+      workDir=/build/pluto
+      mkdir -p $workDir
 
-      cp -r ${./static} /data
-      mv /data/${staticFileName} /data/static
+      cp -r ${./static} $workDir
+      mv $workDir/${staticFileName} $workDir/static
 
-      cp -r ${./config} /data
-      mv /data/${configFileName} /data/config
+      cp -r ${./config} $workDir
+      mv $workDir/${configFileName} $workDir/config
+
+      cp -r ${./templates} $workDir
+      mv $workDir/${templatesFileName} $workDir/templates
     '';
     config = {
-      WorkingDir = "/data";
+      WorkingDir = "/build/pluto";
       Cmd = [
         "${exe}/bin/pluto"
       ];
