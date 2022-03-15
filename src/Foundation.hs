@@ -24,7 +24,7 @@ import qualified Data.Text.Encoding as TE
 import Yesod.Auth.OpenId (IdentifierType (Claimed), authOpenId)
 import Yesod.Core.Types (Logger)
 import qualified Yesod.Core.Unsafe as Unsafe
-import Yesod.Default.Util (addStaticContentExternal)
+import Yesod.EmbeddedStatic (EmbeddedStatic, embedStaticContent)
 
 {- | The foundation datatype for your application. This can be a good place to
  keep settings and values requiring initialization before your application
@@ -34,7 +34,7 @@ import Yesod.Default.Util (addStaticContentExternal)
 data App = App
   { appSettings :: AppSettings
   , -- | Settings for static file serving.
-    appStatic :: Static
+    appStatic :: EmbeddedStatic
   , -- | Database connection pool.
     appConnPool :: ConnectionPool
   , appHttpManager :: Manager
@@ -195,20 +195,8 @@ instance Yesod App where
     -- | The contents of the file
     LByteString ->
     Handler (Maybe (Either Text (Route App, [(Text, Text)])))
-  addStaticContent ext mime content = do
-    master <- getYesod
-    let staticDir = appStaticDir $ appSettings master
-    addStaticContentExternal
-      minifym
-      genFileName
-      staticDir
-      (StaticR . flip StaticRoute [])
-      ext
-      mime
-      content
-    where
-      -- Generate a unique filename based on the content itself
-      genFileName lbs = "autogen-" ++ base64md5 lbs
+  addStaticContent = do
+    embedStaticContent appStatic StaticR minifym
 
   -- What messages should be logged. The following includes all messages when
   -- in development, and warnings and errors in production.

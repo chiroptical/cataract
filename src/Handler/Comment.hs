@@ -10,7 +10,7 @@ postCommentR = do
 
   -- The YesodAuth instance in Foundation.hs defines the UserId to be the type used for authentication.
   maybeCurrentUserId <- maybeAuthId
-  let comment' = comment{commentUserId = maybeCurrentUserId}
+  let comment' = comment {commentUserId = maybeCurrentUserId}
 
   insertedComment <- runDB $ insertEntity comment'
   returnJson insertedComment

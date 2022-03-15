@@ -23,4 +23,7 @@ format-haskell:
 
 format: format-nix format-haskell
 
-.PHONY: build hpack run docker-build docker-run format-nix format-haskell format
+ghcid: hpack
+	ghcid -c cabal repl
+
+.PHONY: build hpack run docker-build docker-run format-nix format-haskell format ghcid

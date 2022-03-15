@@ -52,6 +52,8 @@ data AppSettings = AppSettings
   , -- | Get the IP address from the header when logging. Useful when sitting
     -- behind a reverse proxy.
     appIpFromHeader :: Bool
+  , -- | Use development environment
+    appDevelopment :: Bool
   , -- | Use detailed request logging system
     appDetailedRequestLogging :: Bool
   , -- | Should all log messages be displayed?
@@ -81,20 +83,20 @@ instance FromJSON AppSettings where
     appPort <- o .: "port"
     appIpFromHeader <- o .: "ip-from-header"
 
-    dev <- o .: "development"
+    appDevelopment <- o .: "development"
 
-    appDetailedRequestLogging <- o .:? "detailed-logging" .!= dev
-    appShouldLogAll <- o .:? "should-log-all" .!= dev
-    appReloadTemplates <- o .:? "reload-templates" .!= dev
-    appMutableStatic <- o .:? "mutable-static" .!= dev
-    appSkipCombining <- o .:? "skip-combining" .!= dev
+    appDetailedRequestLogging <- o .:? "detailed-logging" .!= appDevelopment
+    appShouldLogAll <- o .:? "should-log-all" .!= appDevelopment
+    appReloadTemplates <- o .:? "reload-templates" .!= appDevelopment
+    appMutableStatic <- o .:? "mutable-static" .!= appDevelopment
+    appSkipCombining <- o .:? "skip-combining" .!= appDevelopment
 
     appCopyright <- o .: "copyright"
     appAnalytics <- o .:? "analytics"
 
-    appAuthDummyLogin <- o .:? "auth-dummy-login" .!= dev
+    appAuthDummyLogin <- o .:? "auth-dummy-login" .!= appDevelopment
 
-    return AppSettings{..}
+    return AppSettings {..}
 
 {- | Settings for 'widgetFile', such as which template languages to support and
  default Hamlet settings.
