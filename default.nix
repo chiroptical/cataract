@@ -47,8 +47,6 @@
       staticFileName = getFileName static;
       config = "${./config}";
       configFileName = getFileName config;
-      templates = "${./templates}";
-      templatesFileName = getFileName templates;
     in ''
       workDir=/build/pluto
       mkdir -p $workDir
@@ -58,9 +56,6 @@
 
       cp -r ${./config} $workDir
       mv $workDir/${configFileName} $workDir/config
-
-      cp -r ${./templates} $workDir
-      mv $workDir/${templatesFileName} $workDir/templates
     '';
     config = {
       WorkingDir = "/build/pluto";
