@@ -64,6 +64,7 @@ oauth2TwitchScoped scopes clientId clientSecret =
                           , -- TODO: bring in yesod-auth-oauth2 0.7.0.1 via nix
                             -- yesod-auth-oauth2 0.6.3.4 doesn't have a redirect_uri
                             -- parameter, if we update we can move this
+                            -- TODO: This should not be hardcoded...
                             ("redirect_uri", "http://localhost:3000/auth/page/twitch/callback")
                           ]
         , oauthAccessTokenEndpoint =
@@ -71,6 +72,7 @@ oauth2TwitchScoped scopes clientId clientSecret =
               `withQuery` [ -- TODO: bring in yesod-auth-oauth2 0.7.0.1 via nix
                             -- yesod-auth-oauth2 0.6.3.4 doesn't have a redirect_uri
                             -- parameter, if we update we can move this
+                            -- TODO: This should not be hardcoded...
                             ("redirect_uri", "http://localhost:3000/auth/page/twitch/callback")
                           , ("client_id", Text.encodeUtf8 clientId)
                           , ("client_secret", Text.encodeUtf8 clientSecret)
