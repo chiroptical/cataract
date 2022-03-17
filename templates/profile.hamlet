@@ -7,4 +7,4 @@
       This page is protected and access is allowed only for authenticated users.
 
     <p>
-      Your data is protected with us <strong><span class="username">#{userIdent user}</span></strong>!
+      Your data is protected with us <strong><span class="username">#{twitchUserIdent user}</span></strong>!

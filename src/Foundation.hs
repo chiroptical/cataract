@@ -11,6 +11,7 @@
 module Foundation where
 
 import Control.Monad.Logger (LogSource)
+import qualified Data.Map.Strict as Map
 import Database.Persist.Sql (ConnectionPool, runSqlPool)
 import Import.NoFoundation
 import Text.Hamlet (hamletFile)
@@ -174,7 +175,6 @@ instance Yesod App where
     Handler AuthResult
   -- Routes not requiring authentication.
   isAuthorized (AuthR _) _ = return Authorized
-  isAuthorized CommentR _ = return Authorized
   isAuthorized HomeR _ = return Authorized
   isAuthorized FaviconR _ = return Authorized
   isAuthorized RobotsR _ = return Authorized
@@ -237,7 +237,7 @@ instance YesodPersistRunner App where
   getDBRunner = defaultGetDBRunner appConnPool
 
 instance YesodAuth App where
-  type AuthId App = UserId
+  type AuthId App = TwitchUserId
 
   -- Where to send a user after successful login
   loginDest :: App -> Route App
@@ -255,17 +255,20 @@ instance YesodAuth App where
     (MonadHandler m, HandlerSite m ~ App) =>
     Creds App ->
     m (AuthenticationResult App)
-  authenticate creds = liftHandler $
+  authenticate Creds {..} = liftHandler $
     runDB $ do
-      x <- getBy $ UniqueUser $ credsIdent creds
+      x <- getBy $ UniqueTwitchUser credsIdent
       case x of
         Just (Entity uid _) -> return $ Authenticated uid
-        Nothing ->
+        Nothing -> do
+          let credsExtraMap = Map.fromList credsExtra
           Authenticated
             <$> insert
-              User
-                { userIdent = credsIdent creds
-                , userPassword = Nothing
+              -- TODO: accessToken and refreshToken should be encrypted probably
+              TwitchUser
+                { twitchUserIdent = credsIdent
+                , twitchUserAccessToken = Map.lookup "accessToken" credsExtraMap
+                , twitchUserRefreshToken = Map.lookup "refreshToken" credsExtraMap
                 }
 
   -- You can add other plugins like Google Email, email or OAuth here

@@ -105,25 +105,6 @@
                         (see <tt>Handler/Comment.hs</tt>, <tt>templates/homepage.julius</tt>,
                         and <tt>Handler/Home.hs</tt> for the implementation).
 
-        <div .row>
-            <div .col-lg-6>
-                <div .bs-callout.bs-callout-info.well>
-                    <form .form-horizontal ##{commentFormId}>
-                        <div .field>
-                            <textarea rows="2" ##{commentTextareaId} placeholder="Your comment here..." required></textarea>
-
-                        <button .btn.btn-primary type=submit>
-                           Create comment
-
-           <div .col-lg-4.col-lg-offset-1>
-               <div .bs-callout.bs-callout-info>
-                   <small>
-                       Your comments will appear here. You can also open the
-                       console log to see the raw response from the server.
-                   <ul ##{commentListId}>
-                       $forall comment <- allComments
-                           <li>#{commentMessage $ entityVal comment}
-
     <hr>
 
     <!-- Testing

@@ -1,4 +1,6 @@
+{-# LANGUAGE NamedFieldPuns #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards #-}
 
 module Yesod.Auth.OAuth2.Twitch (
   oauth2Twitch,
@@ -9,12 +11,23 @@ import qualified Data.Text as Text
 import qualified Data.Text.Encoding as Text
 import Yesod.Auth.OAuth2.Prelude
 
-newtype User = User Text
+data TwitchUser = TwitchUser
+  { twitchUserId :: Text
+  , twitchUserAccessToken :: Text
+  , twitchUserRefreshToken :: Text
+  }
 
-instance FromJSON User where
+instance Show TwitchUser where
+  show TwitchUser {..} = "TwitchUser { twitchUserId = " <> Text.unpack twitchUserId <> ", ... }"
+
+instance FromJSON TwitchUser where
   parseJSON =
-    withObject "User" $
-      \o -> User <$> o .: "user_id"
+    withObject "TwitchUser" $
+      \o ->
+        TwitchUser
+          <$> o .: "user_id"
+          <*> o .: "access_token"
+          <*> o .: "refresh_token"
 
 pluginName :: Text
 pluginName = "twitch"
@@ -28,7 +41,7 @@ oauth2Twitch = oauth2TwitchScoped defaultScopes
 oauth2TwitchScoped :: YesodAuth m => [Text] -> Text -> Text -> AuthPlugin m
 oauth2TwitchScoped scopes clientId clientSecret =
   authOAuth2 pluginName oauth2 $ \manager token -> do
-    (User userId, userResponse) <-
+    (TwitchUser {..}, userResponse) <-
       authGetProfile
         pluginName
         manager
@@ -38,7 +51,7 @@ oauth2TwitchScoped scopes clientId clientSecret =
     pure
       Creds
         { credsPlugin = pluginName
-        , credsIdent = Text.pack $ show userId
+        , credsIdent = twitchUserId
         , credsExtra = setExtra token userResponse
         }
   where

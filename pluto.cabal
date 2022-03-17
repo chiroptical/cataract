@@ -12,7 +12,6 @@ library
   exposed-modules:
       Application
       Foundation
-      Handler.Comment
       Handler.Common
       Handler.Home
       Handler.Profile
