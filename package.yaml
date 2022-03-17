@@ -7,8 +7,10 @@ dependencies:
 - yesod
 - yesod-core
 - yesod-auth
+- yesod-auth-oauth2
 - yesod-static
 - yesod-form
+- yesod-eventsource
 - classy-prelude
 - classy-prelude-conduit
 - classy-prelude-yesod

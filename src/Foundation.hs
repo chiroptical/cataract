@@ -1,8 +1,8 @@
-{-# LANGUAGE ExplicitForAll #-}
 {-# LANGUAGE InstanceSigs #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE RankNTypes #-}
+{-# LANGUAGE RecordWildCards #-}
 {-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ViewPatterns #-}
@@ -18,10 +18,10 @@ import Text.Jasmine (minifym)
 
 -- Used only when in "auth-dummy-login" setting is enabled.
 import Yesod.Auth.Dummy
+import Yesod.Auth.OAuth2.Twitch
 
 import qualified Data.CaseInsensitive as CI
 import qualified Data.Text.Encoding as TE
-import Yesod.Auth.OpenId (IdentifierType (Claimed), authOpenId)
 import Yesod.Core.Types (Logger)
 import qualified Yesod.Core.Unsafe as Unsafe
 import Yesod.EmbeddedStatic (EmbeddedStatic, embedStaticContent)
@@ -270,10 +270,11 @@ instance YesodAuth App where
 
   -- You can add other plugins like Google Email, email or OAuth here
   authPlugins :: App -> [AuthPlugin App]
-  authPlugins app = [authOpenId Claimed []] ++ extraAuthPlugins
+  authPlugins app = oauth2Twitch twitchSettingsClientId twitchSettingsClientSecret : extraAuthPlugins
     where
       -- Enable authDummy login if enabled.
       extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
+      TwitchSettings {..} = appTwitchSettings $ appSettings app
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult

@@ -72,6 +72,8 @@ data AppSettings = AppSettings
     appAnalytics :: Maybe Text
   , -- | Indicate if auth dummy login should be enabled.
     appAuthDummyLogin :: Bool
+  , -- | Twitch Settings
+    appTwitchSettings :: TwitchSettings
   }
 
 instance FromJSON AppSettings where
@@ -84,19 +86,30 @@ instance FromJSON AppSettings where
     appIpFromHeader <- o .: "ip-from-header"
 
     appDevelopment <- o .: "development"
-
     appDetailedRequestLogging <- o .:? "detailed-logging" .!= appDevelopment
     appShouldLogAll <- o .:? "should-log-all" .!= appDevelopment
     appReloadTemplates <- o .:? "reload-templates" .!= appDevelopment
     appMutableStatic <- o .:? "mutable-static" .!= appDevelopment
     appSkipCombining <- o .:? "skip-combining" .!= appDevelopment
+    appAuthDummyLogin <- o .:? "auth-dummy-login" .!= appDevelopment
 
     appCopyright <- o .: "copyright"
     appAnalytics <- o .:? "analytics"
 
-    appAuthDummyLogin <- o .:? "auth-dummy-login" .!= appDevelopment
+    appTwitchSettings <- o .: "twitch"
 
     return AppSettings {..}
+
+data TwitchSettings = TwitchSettings
+  { twitchSettingsClientId :: Text
+  , twitchSettingsClientSecret :: Text
+  }
+
+instance FromJSON TwitchSettings where
+  parseJSON = withObject "TwitchSettings" $ \o -> do
+    twitchSettingsClientId <- o .: "client-id"
+    twitchSettingsClientSecret <- o .: "client-secret"
+    pure TwitchSettings {..}
 
 {- | Settings for 'widgetFile', such as which template languages to support and
  default Hamlet settings.

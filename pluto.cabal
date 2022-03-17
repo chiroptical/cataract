@@ -21,6 +21,7 @@ library
       Model
       Settings
       Settings.StaticFiles
+      Yesod.Auth.OAuth2.Twitch
   other-modules:
       Paths_pluto
   hs-source-dirs:
@@ -63,7 +64,9 @@ library
     , yaml
     , yesod
     , yesod-auth
+    , yesod-auth-oauth2
     , yesod-core
+    , yesod-eventsource
     , yesod-form
     , yesod-static
   default-language: Haskell2010
@@ -114,7 +117,9 @@ executable pluto
     , yaml
     , yesod
     , yesod-auth
+    , yesod-auth-oauth2
     , yesod-core
+    , yesod-eventsource
     , yesod-form
     , yesod-static
   default-language: Haskell2010
@@ -171,7 +176,9 @@ test-suite pluto-test
     , yaml
     , yesod
     , yesod-auth
+    , yesod-auth-oauth2
     , yesod-core
+    , yesod-eventsource
     , yesod-form
     , yesod-static
     , yesod-test

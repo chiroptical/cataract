@@ -39,3 +39,7 @@ database:
 
 copyright: Insert copyright statement here
 #analytics: UA-YOURCODE
+
+twitch:
+  client-id:      "_env:TWITCH_CLIENT_ID:twitch"
+  client-secret:  "_env:TWITCH_CLIENT_SECRET:twitch"
