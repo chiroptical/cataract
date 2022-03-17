@@ -29,4 +29,7 @@ ghcid: hpack
 clean: hpack
 	cabal clean
 
-.PHONY: build hpack run docker-build docker-run format-nix format-haskell format ghcid clean
+hlint: hpack
+	hlint .
+
+.PHONY: build hpack run docker-build docker-run format-nix format-haskell format ghcid clean hlint
