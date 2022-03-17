@@ -11,6 +11,11 @@
         "pluto"
         (gitignore ./.)
         {};
+      "yesod-auth-oauth2" =
+        hself.callCabal2nix
+        "yesod-auth-oauth2"
+        sources.yesod-auth-oauth2
+        {};
     };
   };
 
