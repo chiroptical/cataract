@@ -34,15 +34,15 @@
 -}
 module DevelMain where
 
-import Application (getApplicationRepl, shutdownApp)
-import Prelude
+import           Application              (getApplicationRepl, shutdownApp)
+import           Prelude
 
-import Control.Concurrent
-import Control.Monad ((>=>))
-import Data.IORef
-import Foreign.Store
-import GHC.Word
-import Network.Wai.Handler.Warp
+import           Control.Concurrent
+import           Control.Monad            ((>=>))
+import           Data.IORef
+import           Foreign.Store
+import           GHC.Word
+import           Network.Wai.Handler.Warp
 
 {- | Start or restart the server.
  newStore is from foreign-store.

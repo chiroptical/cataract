@@ -1,7 +1,7 @@
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RecordWildCards   #-}
+{-# LANGUAGE TemplateHaskell   #-}
 
 {- | Settings are centralized, as much as possible, into this file. This
  includes database connection settings, static file locations, etc.
@@ -11,26 +11,19 @@
 -}
 module Settings where
 
-import ClassyPrelude.Yesod
-import qualified Control.Exception as Exception
-import Data.Aeson (
-  Result (..),
-  fromJSON,
-  withObject,
-  (.!=),
-  (.:?),
- )
-import Data.FileEmbed (embedFile)
-import Data.Yaml (decodeEither')
-import Database.Persist.Postgresql (PostgresConf)
-import Language.Haskell.TH.Syntax (Exp, Name, Q)
-import Network.Wai.Handler.Warp (HostPreference)
-import Yesod.Default.Config2 (applyEnvValue, configSettingsYml)
-import Yesod.Default.Util (
-  WidgetFileSettings,
-  widgetFileNoReload,
-  widgetFileReload,
- )
+import           ClassyPrelude.Yesod
+import qualified Control.Exception           as Exception
+import           Data.Aeson                  (Result (..), fromJSON, withObject,
+                                              (.!=), (.:?))
+import           Data.FileEmbed              (embedFile)
+import           Data.Yaml                   (decodeEither')
+import           Database.Persist.Postgresql (PostgresConf)
+import           Language.Haskell.TH.Syntax  (Exp, Name, Q)
+import           Network.Wai.Handler.Warp    (HostPreference)
+import           Yesod.Default.Config2       (applyEnvValue, configSettingsYml)
+import           Yesod.Default.Util          (WidgetFileSettings,
+                                              widgetFileNoReload,
+                                              widgetFileReload)
 
 {- | Runtime settings to configure this application. These settings can be
  loaded from various sources: defaults, environment variables, config files,
@@ -38,41 +31,41 @@ import Yesod.Default.Util (
 -}
 data AppSettings = AppSettings
   { -- | Directory from which to serve static files.
-    appStaticDir :: String
+    appStaticDir              :: String
   , -- | Configuration settings for accessing the database.
-    appDatabaseConf :: PostgresConf
+    appDatabaseConf           :: PostgresConf
   , -- | Base for all generated URLs. If @Nothing@, determined
     -- from the request headers.
-    appRoot :: Maybe Text
+    appRoot                   :: Maybe Text
   , -- | Host/interface the server should bind to.
-    appHost :: HostPreference
+    appHost                   :: HostPreference
   , -- | Port to listen on
-    appPort :: Int
+    appPort                   :: Int
   , -- | Get the IP address from the header when logging. Useful when sitting
     -- behind a reverse proxy.
-    appIpFromHeader :: Bool
+    appIpFromHeader           :: Bool
   , -- | Use development environment
-    appDevelopment :: Bool
+    appDevelopment            :: Bool
   , -- | Use detailed request logging system
     appDetailedRequestLogging :: Bool
   , -- | Should all log messages be displayed?
-    appShouldLogAll :: Bool
+    appShouldLogAll           :: Bool
   , -- | Use the reload version of templates
-    appReloadTemplates :: Bool
+    appReloadTemplates        :: Bool
   , -- | Assume that files in the static dir may change after compilation
-    appMutableStatic :: Bool
+    appMutableStatic          :: Bool
   , -- | Perform no stylesheet/script combining
-    appSkipCombining :: Bool
+    appSkipCombining          :: Bool
   , -- Example app-specific configuration values.
 
     -- | Copyright text to appear in the footer of the page
-    appCopyright :: Text
+    appCopyright              :: Text
   , -- | Google Analytics code
-    appAnalytics :: Maybe Text
+    appAnalytics              :: Maybe Text
   , -- | Indicate if auth dummy login should be enabled.
-    appAuthDummyLogin :: Bool
+    appAuthDummyLogin         :: Bool
   , -- | Twitch Settings
-    appTwitchSettings :: TwitchSettings
+    appTwitchSettings         :: TwitchSettings
   }
 
 instance FromJSON AppSettings where
@@ -100,7 +93,7 @@ instance FromJSON AppSettings where
     return AppSettings {..}
 
 data TwitchSettings = TwitchSettings
-  { twitchSettingsClientId :: Text
+  { twitchSettingsClientId     :: Text
   , twitchSettingsClientSecret :: Text
   }
 
@@ -149,7 +142,7 @@ configSettingsYmlValue =
 compileTimeAppSettings :: AppSettings
 compileTimeAppSettings =
   case fromJSON $ applyEnvValue False mempty configSettingsYmlValue of
-    Error e -> error e
+    Error e          -> error e
     Success settings -> settings
 
 -- The following two functions can be used to combine multiple CSS or JS files

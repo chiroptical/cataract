@@ -1,9 +1,9 @@
-{-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE OverloadedStrings #-}
 
 module Handler.ProfileSpec (spec) where
 
-import TestImport
+import           TestImport
 
 spec :: Spec
 spec = withApp $ do

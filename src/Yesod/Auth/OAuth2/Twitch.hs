@@ -1,19 +1,19 @@
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns    #-}
 {-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RecordWildCards #-}
+{-# LANGUAGE RecordWildCards   #-}
 
 module Yesod.Auth.OAuth2.Twitch (
   oauth2Twitch,
   oauth2TwitchScoped,
 ) where
 
-import qualified Data.Text as Text
-import qualified Data.Text.Encoding as Text
-import Yesod.Auth.OAuth2.Prelude
+import qualified Data.Text                 as Text
+import qualified Data.Text.Encoding        as Text
+import           Yesod.Auth.OAuth2.Prelude
 
 data TwitchUser = TwitchUser
-  { twitchUserId :: Text
-  , twitchUserAccessToken :: Text
+  { twitchUserId           :: Text
+  , twitchUserAccessToken  :: Text
   , twitchUserRefreshToken :: Text
   }
 

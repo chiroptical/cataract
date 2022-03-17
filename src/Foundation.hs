@@ -1,31 +1,30 @@
-{-# LANGUAGE InstanceSigs #-}
+{-# LANGUAGE InstanceSigs          #-}
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE RankNTypes #-}
-{-# LANGUAGE RecordWildCards #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE ViewPatterns #-}
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE RankNTypes            #-}
+{-# LANGUAGE RecordWildCards       #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Foundation where
 
-import Control.Monad.Logger (LogSource)
-import qualified Data.Map.Strict as Map
-import Database.Persist.Sql (ConnectionPool, runSqlPool)
-import Import.NoFoundation
-import Text.Hamlet (hamletFile)
-import Text.Jasmine (minifym)
+import           Control.Monad.Logger     (LogSource)
+import qualified Data.Map.Strict          as Map
+import           Database.Persist.Sql     (ConnectionPool, runSqlPool)
+import           Import.NoFoundation
+import           Text.Hamlet              (hamletFile)
+import           Text.Jasmine             (minifym)
 
 -- Used only when in "auth-dummy-login" setting is enabled.
-import Yesod.Auth.Dummy
-import Yesod.Auth.OAuth2.Twitch
+import           Yesod.Auth.Dummy
+import           Yesod.Auth.OAuth2.Twitch
 
-import qualified Data.CaseInsensitive as CI
-import qualified Data.Text.Encoding as TE
-import Yesod.Core.Types (Logger)
-import qualified Yesod.Core.Unsafe as Unsafe
-import Yesod.EmbeddedStatic (EmbeddedStatic, embedStaticContent)
+import qualified Data.CaseInsensitive     as CI
+import qualified Data.Text.Encoding       as TE
+import           Yesod.Core.Types         (Logger)
+import qualified Yesod.Core.Unsafe        as Unsafe
+import           Yesod.EmbeddedStatic     (EmbeddedStatic, embedStaticContent)
 
 {- | The foundation datatype for your application. This can be a good place to
  keep settings and values requiring initialization before your application
@@ -33,18 +32,18 @@ import Yesod.EmbeddedStatic (EmbeddedStatic, embedStaticContent)
  access to the data present here.
 -}
 data App = App
-  { appSettings :: AppSettings
+  { appSettings    :: AppSettings
   , -- | Settings for static file serving.
-    appStatic :: EmbeddedStatic
+    appStatic      :: EmbeddedStatic
   , -- | Database connection pool.
-    appConnPool :: ConnectionPool
+    appConnPool    :: ConnectionPool
   , appHttpManager :: Manager
-  , appLogger :: Logger
+  , appLogger      :: Logger
   }
 
 data MenuItem = MenuItem
-  { menuItemLabel :: Text
-  , menuItemRoute :: Route App
+  { menuItemLabel          :: Text
+  , menuItemRoute          :: Route App
   , menuItemAccessCallback :: Bool
   }
 
@@ -83,7 +82,7 @@ instance Yesod App where
   approot :: Approot App
   approot = ApprootRequest $ \app req ->
     case appRoot $ appSettings app of
-      Nothing -> getApprootText guessApproot app req
+      Nothing   -> getApprootText guessApproot app req
       Just root -> root
 
   -- Store session data on the client in encrypted cookies,
@@ -174,14 +173,14 @@ instance Yesod App where
     Bool ->
     Handler AuthResult
   -- Routes not requiring authentication.
-  isAuthorized (AuthR _) _ = return Authorized
-  isAuthorized HomeR _ = return Authorized
-  isAuthorized FaviconR _ = return Authorized
-  isAuthorized RobotsR _ = return Authorized
+  isAuthorized (AuthR _) _   = return Authorized
+  isAuthorized HomeR _       = return Authorized
+  isAuthorized FaviconR _    = return Authorized
+  isAuthorized RobotsR _     = return Authorized
   isAuthorized (StaticR _) _ = return Authorized
   -- the profile route requires that the user is authenticated, so we
   -- delegate to that function
-  isAuthorized ProfileR _ = isAuthenticated
+  isAuthorized ProfileR _    = isAuthenticated
 
   -- This function creates static content files in the static folder
   -- and names them based on a hash of their content. This allows
@@ -219,10 +218,10 @@ instance YesodBreadcrumbs App where
     -- | The route the user is visiting currently.
     Route App ->
     Handler (Text, Maybe (Route App))
-  breadcrumb HomeR = return ("Home", Nothing)
+  breadcrumb HomeR     = return ("Home", Nothing)
   breadcrumb (AuthR _) = return ("Login", Just HomeR)
-  breadcrumb ProfileR = return ("Profile", Just HomeR)
-  breadcrumb _ = return ("home", Nothing)
+  breadcrumb ProfileR  = return ("Profile", Just HomeR)
+  breadcrumb _         = return ("home", Nothing)
 
 -- How to run database actions.
 instance YesodPersist App where
@@ -285,7 +284,7 @@ isAuthenticated = do
   muid <- maybeAuthId
   return $ case muid of
     Nothing -> Unauthorized "You must login to access this page"
-    Just _ -> Authorized
+    Just _  -> Authorized
 
 instance YesodAuthPersist App
 

@@ -19,7 +19,7 @@ format-nix:
 	alejandra .
 
 format-haskell:
-	find app/ src/ test/ -name "*.hs" -exec fourmolu -i {} +
+	stylish-haskell -i **/*.hs
 
 format: format-nix format-haskell
 

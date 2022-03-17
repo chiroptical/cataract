@@ -22,7 +22,7 @@
       myHaskellPackages.haskell-language-server
       pkgs.haskellPackages.cabal-install
       pkgs.haskellPackages.ghcid
-      pkgs.haskellPackages.fourmolu
+      pkgs.haskellPackages.stylish-haskell
       pkgs.haskellPackages.hlint
       pkgs.haskellPackages.hpack
       pkgs.niv

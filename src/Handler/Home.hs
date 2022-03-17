@@ -1,17 +1,18 @@
 {-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE NoImplicitPrelude #-}
+{-# LANGUAGE NoImplicitPrelude     #-}
+{-# LANGUAGE OverloadedStrings     #-}
+{-# LANGUAGE TemplateHaskell       #-}
+{-# LANGUAGE TypeFamilies          #-}
 
 module Handler.Home where
 
-import Import
-import Yesod.Form.Bootstrap3 (BootstrapFormLayout (..), renderBootstrap3)
+import           Import
+import           Yesod.Form.Bootstrap3 (BootstrapFormLayout (..),
+                                        renderBootstrap3)
 
 -- Define our data that will be used for creating the form.
 data FileForm = FileForm
-  { fileInfo :: FileInfo
+  { fileInfo        :: FileInfo
   , fileDescription :: Text
   }
 
@@ -39,7 +40,7 @@ postHomeR = do
   let handlerName = "postHomeR" :: Text
       submission = case result of
         FormSuccess res -> Just res
-        _ -> Nothing
+        _               -> Nothing
   defaultLayout $ do
     aDomId <- newIdent
     setTitle "Welcome To Yesod!"
