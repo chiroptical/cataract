@@ -90,7 +90,7 @@ instance FromJSON AppSettings where
 
     appTwitchSettings <- o .: "twitch"
 
-    return AppSettings {..}
+    pure AppSettings {..}
 
 data TwitchSettings = TwitchSettings
   { twitchSettingsClientId     :: Text

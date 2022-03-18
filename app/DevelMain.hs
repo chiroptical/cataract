@@ -57,7 +57,7 @@ update = do
       done <- storeAction doneStore newEmptyMVar
       tid <- start done
       _ <- storeAction (Store tidStoreNum) (newIORef tid)
-      return ()
+      pure ()
     -- server is already running
     Just tidStore -> restartAppInNewThread tidStore
   where

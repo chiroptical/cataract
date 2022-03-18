@@ -30,6 +30,7 @@
       pkgs.haskellPackages.stylish-haskell
       pkgs.haskellPackages.hlint
       pkgs.haskellPackages.hpack
+      pkgs.haskellPackages.retrie
       pkgs.niv
       pkgs.alejandra
     ];

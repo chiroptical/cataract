@@ -44,7 +44,7 @@ withApp = before $ do
   foundation <- makeFoundation settings
   wipeDB foundation
   logWare <- liftIO $ makeLogWare foundation
-  return (foundation, logWare)
+  pure (foundation, logWare)
 
 -- TODO: Need to finish this function!
 wipeDB :: App -> IO ()
@@ -63,7 +63,7 @@ getTables = do
     |]
       []
 
-  return $ map unSingle tables
+  pure $ map unSingle tables
 
 {- | Authenticate as a user. This relies on the `auth-dummy-login: true` flag
  being set in test-settings.yaml, which enables dummy authentication in
@@ -94,4 +94,4 @@ createUser ident = runDB $ do
         , emailUserId = Just $ entityKey user
         , emailVerkey = Nothing
         }
-  return user
+  pure user
