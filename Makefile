@@ -8,7 +8,7 @@ run: hpack
 	cabal run	pluto
 
 docker-build:
-	nix-build -A docker
+	nix build .#docker
 	docker load -i result
 
 docker-run:

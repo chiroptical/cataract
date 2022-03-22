@@ -20,8 +20,11 @@
       pluto = pkgs.callPackage ./pluto.nix {};
       docker = pkgs.callPackage ./docker.nix {};
     in {
-      inherit docker;
-      devShell = import ./shell.nix {};
+      devShell = import ./shell.nix pkgs;
       defaultPackage = pluto;
+      packages = flake-utils.lib.flattenTree {
+        inherit pluto;
+        inherit docker;
+      };
     });
 }

@@ -1,11 +1,10 @@
-{pkgs, myHaskellPackages, ...}:
-
-myHaskellPackages.shellFor {
+{pkgs, ...}:
+pkgs.mkShell {
   inputsFrom = [
     (import ./pluto.nix pkgs).env
   ];
   buildInputs = [
-    myHaskellPackages.haskell-language-server
+    pkgs.haskell-language-server
     pkgs.haskellPackages.cabal-install
     pkgs.haskellPackages.ghcid
     pkgs.haskellPackages.stylish-haskell
