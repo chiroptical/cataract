@@ -26,7 +26,7 @@ pluginName :: Text
 pluginName = "twitch"
 
 defaultScopes :: [Text]
-defaultScopes = ["channel:read:subscriptions", "user:read:follows", "user:read:subscriptions"]
+defaultScopes = ["user:read:email"]
 
 oauth2Twitch :: YesodAuth m => Text -> Text -> AuthPlugin m
 oauth2Twitch = oauth2TwitchScoped defaultScopes
