@@ -9,12 +9,14 @@ dependencies:
 - yesod-auth-oauth2
 - yesod-static
 - yesod-form
+- lens
 - yesod-eventsource
 - classy-prelude
 - classy-prelude-conduit
 - classy-prelude-yesod
 - bytestring
 - text
+- esqueleto
 - persistent
 - persistent-postgresql
 - persistent-template
@@ -44,6 +46,12 @@ dependencies:
 - wai
 - wreq
 - foreign-store
+
+default-extensions:
+- ImportQualifiedPost
+- RecordWildCards
+- NoImplicitPrelude
+- OverloadedStrings
 
 # The library contains all of our application code. The executable
 # defined below is just a thin wrapper.

@@ -15,16 +15,24 @@ library
       Handler.Common
       Handler.Home
       Handler.Profile
+      Handler.Twitch.Followers
       Import
       Import.NoFoundation
       Model
       Request.Twitch
+      Request.Twitch.Followers
+      Request.Twitch.Sql
       Settings
       Settings.StaticFiles
   other-modules:
       Paths_pluto
   hs-source-dirs:
       src
+  default-extensions:
+      ImportQualifiedPost
+      RecordWildCards
+      NoImplicitPrelude
+      OverloadedStrings
   ghc-options: -Wall -fwarn-tabs -O2
   build-depends:
       aeson
@@ -38,12 +46,14 @@ library
     , containers
     , data-default
     , directory
+    , esqueleto
     , fast-logger
     , file-embed
     , foreign-store
     , hjsmin
     , http-client-tls
     , http-conduit
+    , lens
     , monad-control
     , monad-logger
     , persistent
@@ -78,6 +88,11 @@ executable pluto
       Paths_pluto
   hs-source-dirs:
       app
+  default-extensions:
+      ImportQualifiedPost
+      RecordWildCards
+      NoImplicitPrelude
+      OverloadedStrings
   ghc-options: -threaded -rtsopts -with-rtsopts=-N
   build-depends:
       aeson
@@ -91,12 +106,14 @@ executable pluto
     , containers
     , data-default
     , directory
+    , esqueleto
     , fast-logger
     , file-embed
     , foreign-store
     , hjsmin
     , http-client-tls
     , http-conduit
+    , lens
     , monad-control
     , monad-logger
     , persistent
@@ -137,6 +154,11 @@ test-suite pluto-test
       Paths_pluto
   hs-source-dirs:
       test
+  default-extensions:
+      ImportQualifiedPost
+      RecordWildCards
+      NoImplicitPrelude
+      OverloadedStrings
   ghc-options: -Wall
   build-depends:
       aeson
@@ -150,6 +172,7 @@ test-suite pluto-test
     , containers
     , data-default
     , directory
+    , esqueleto
     , fast-logger
     , file-embed
     , foreign-store
@@ -157,6 +180,7 @@ test-suite pluto-test
     , hspec >=2.0.0
     , http-client-tls
     , http-conduit
+    , lens
     , monad-control
     , monad-logger
     , persistent

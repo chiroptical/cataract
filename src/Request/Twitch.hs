@@ -1,32 +1,65 @@
 {-# LANGUAGE TypeFamilies #-}
+{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE ConstrainedClassMethods #-}
+{-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE PolyKinds #-}
+{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TypeApplications #-}
+{-# LANGUAGE AllowAmbiguousTypes #-}
 
 module Request.Twitch where
 
+import Control.Lens
 import Network.Wreq
 import Data.Kind (Type)
-import Data.Text (Text)
-import Import.NoFoundation
+import Import.NoFoundation hiding (responseBody)
+import Data.Text.Encoding qualified as Text
 
 data TwitchMethod = GET | POST
   deriving Show
 
+data TwitchError =
+  UnableToFetchCredentials
+  deriving Show
+
 class TwitchRequest endpoint where
-  data TwitchPayload endpoint :: Type
-  data TwitchResponse endpoint :: Type
+  type TwitchPayload endpoint :: Type
+  type TwitchResponse endpoint :: Type
 
   -- | This is converted to a request type in 'Network.Wreq'
-  twitchRequestMethod :: endpoint -> TwitchMethod
+  twitchRequestMethod :: TwitchRequest endpoint => TwitchMethod
 
-  twitchBaseUrl :: endpoint -> String
-  twitchBaseUrl = const "https://api.twitch.tv/helix"
+  twitchBaseUrl :: TwitchRequest endpoint => String
+  twitchBaseUrl = "https://api.twitch.tv/helix"
 
   -- | The resource to request, e.g. 'users/follows'
-  twitchRequestPath :: endpoint -> String
+  twitchRequestPath :: TwitchRequest endpoint => String
 
   -- | The query parameters, combined with 'defaults' to build options
-  twitchQueryParams :: endpoint -> [(Text, Text)]
+  twitchQueryParams :: TwitchRequest endpoint => [(Text, Text)]
 
-  -- | Grab these from the database or refresh the token
-  twitchCredentials :: MonadIO m => endpoint -> m Text
+  twitchRequestOptions :: TwitchRequest endpoint => Options
+  twitchRequestOptions =
+    let queryParams = twitchQueryParams @endpoint
+     in foldl' (\acc (name, val) -> acc & param name .~ [val]) defaults queryParams
 
-  -- Notes: use 'customMethodWith :: String -> Options -> String -> IO (Response L.ByteString)'
+  twitchRequest ::
+    ( MonadIO m
+    , MonadThrow m
+    , TwitchRequest endpoint
+    , ToJSON (TwitchPayload endpoint)
+    , FromJSON (TwitchResponse endpoint)
+    ) =>
+    Text ->
+    TwitchCredentials ->
+    TwitchPayload endpoint ->
+    m (Either TwitchError (TwitchResponse endpoint))
+  twitchRequest clientId TwitchCredentials {..} payload = do
+    let opts = twitchRequestOptions @endpoint
+                & header "Authorization" .~ ["Bearer " <> Text.encodeUtf8 twitchCredentialsAccessToken]
+                & header "Client-Id" .~ [Text.encodeUtf8 clientId]
+        method = twitchRequestMethod @endpoint
+        url = twitchBaseUrl @endpoint <> "/" <> twitchRequestPath @endpoint
+    response <- liftIO $ customPayloadMethodWith (show method) opts url (toJSON payload)
+    decoded <- asJSON @_ @(TwitchResponse endpoint) response
+    pure $ Right (decoded ^. responseBody)

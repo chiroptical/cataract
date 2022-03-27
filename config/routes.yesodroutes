@@ -10,3 +10,5 @@
 / HomeR GET POST
 
 /profile ProfileR GET
+
+/twitch/followers FollowersR GET

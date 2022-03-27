@@ -1,11 +1,13 @@
-{-# LANGUAGE InstanceSigs          #-}
-{-# LANGUAGE MultiParamTypeClasses #-}
-{-# LANGUAGE NoImplicitPrelude     #-}
-{-# LANGUAGE OverloadedStrings     #-}
-{-# LANGUAGE RankNTypes            #-}
-{-# LANGUAGE RecordWildCards       #-}
-{-# LANGUAGE TemplateHaskell       #-}
-{-# LANGUAGE TypeFamilies          #-}
+{-# LANGUAGE DerivingStrategies         #-}
+{-# LANGUAGE GeneralizedNewtypeDeriving #-}
+{-# LANGUAGE InstanceSigs               #-}
+{-# LANGUAGE MultiParamTypeClasses      #-}
+{-# LANGUAGE NoImplicitPrelude          #-}
+{-# LANGUAGE OverloadedStrings          #-}
+{-# LANGUAGE RankNTypes                 #-}
+{-# LANGUAGE RecordWildCards            #-}
+{-# LANGUAGE TemplateHaskell            #-}
+{-# LANGUAGE TypeFamilies               #-}
 
 module Foundation where
 
@@ -181,6 +183,7 @@ instance Yesod App where
   -- the profile route requires that the user is authenticated, so we
   -- delegate to that function
   isAuthorized ProfileR _    = isAuthenticated
+  isAuthorized FollowersR _  = isAuthenticated
 
   -- This function creates static content files in the static folder
   -- and names them based on a hash of their content. This allows
@@ -257,18 +260,28 @@ instance YesodAuth App where
   authenticate Creds {..} = liftHandler $
     runDB $ do
       x <- getBy $ UniqueTwitchUser credsIdent
+      let credsExtraMap = Map.fromList credsExtra
+          -- TODO: accessToken and refreshToken should be encrypted probably
+          mkTwitchCredentials twitchUserId =
+                        TwitchCredentials
+                          <$> Map.lookup "accessToken" credsExtraMap
+                          <*> Map.lookup "refreshToken" credsExtraMap
+                          <*> pure twitchUserId
       case x of
-        Just (Entity uid _) -> pure $ Authenticated uid
+        Just (Entity uid _) -> do
+          forM_ (mkTwitchCredentials uid) $ \tc@TwitchCredentials {..} ->
+            void $ upsert tc
+              [ TwitchCredentialsAccessToken =. twitchCredentialsAccessToken
+              , TwitchCredentialsRefreshToken =. twitchCredentialsRefreshToken
+              ]
+          pure $ Authenticated uid
         Nothing -> do
-          let credsExtraMap = Map.fromList credsExtra
-          Authenticated
-            <$> insert
-              -- TODO: accessToken and refreshToken should be encrypted probably
+          twitchUserId <- insert
               TwitchUser
                 { twitchUserIdent = credsIdent
-                , twitchUserAccessToken = Map.lookup "accessToken" credsExtraMap
-                , twitchUserRefreshToken = Map.lookup "refreshToken" credsExtraMap
                 }
+          forM_ (mkTwitchCredentials twitchUserId) insert_
+          pure $ Authenticated twitchUserId
 
   -- You can add other plugins like Google Email, email or OAuth here
   authPlugins :: App -> [AuthPlugin App]

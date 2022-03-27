@@ -2,8 +2,13 @@
 -- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
 
 TwitchUser
-    ident Text
-    accessToken Text Maybe
-    refreshToken Text Maybe
-    UniqueTwitchUser ident
-    deriving Typeable
+  ident Text
+  UniqueTwitchUser ident
+  deriving Typeable
+
+TwitchCredentials
+  accessToken Text
+  refreshToken Text
+  twitchUserId TwitchUserId
+  UniqueTwitchUserId twitchUserId
+  deriving Show
