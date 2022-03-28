@@ -10,7 +10,10 @@ import Request.Twitch
 import Import.NoFoundation hiding (GET)
 import Data.Aeson
 
-data Followers = Followers
+newtype Followers = Followers
+  { followersToId :: Text
+  }
+  deriving Show
 
 data FollowersPayload = FollowersPayload
   deriving Generic
@@ -31,6 +34,4 @@ instance TwitchRequest Followers where
   type TwitchResponse Followers = FollowersResponse
   twitchRequestMethod = GET
   twitchRequestPath = "users/follows"
-
-  -- TODO: hardcoded to chiroptical for now
-  twitchQueryParams = [("to_id", "131787842")]
+  twitchQueryParams Followers {..} = [("to_id", followersToId)]

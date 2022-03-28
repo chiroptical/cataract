@@ -1,20 +1,20 @@
-module Handler.Twitch.Followers where
+module Handler.Twitch.Subscribers where
 
 import Import
 import Request.Twitch
-import Request.Twitch.Followers
+import Request.Twitch.Subscribers
 import Handler.Twitch.Utils
 
-getFollowersR :: Handler Text
-getFollowersR = do
+getSubscribersR :: Handler Text
+getSubscribersR = do
   TwitchSettings {..} <- appTwitchSettings <$> getsYesod appSettings
   eTwitchCredentials <- getTwitchCredentials
   case eTwitchCredentials of
     Left e -> sendStatusJSON status401 e
     Right creds -> do
-      let followersRequest = Followers $ tshow twitchSettingsStreamerId
-      eResponse <- twitchRequest followersRequest twitchSettingsClientId creds FollowersPayload
+      let subscriberRequest = Subscribers $ tshow twitchSettingsStreamerId
+      eResponse <- twitchRequest subscriberRequest twitchSettingsClientId creds SubscribersPayload
       case eResponse of
         -- TODO: Probably should just send exceptions directly to the client?
         Left e -> sendStatusJSON status500 e
-        Right FollowersResponse {..} -> pure $ tshow followersResponseTotal
+        Right SubscribersResponse {..} -> pure $ tshow subscribersResponseTotal 

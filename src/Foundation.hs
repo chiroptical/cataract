@@ -17,9 +17,6 @@ import           Database.Persist.Sql     (ConnectionPool, runSqlPool)
 import           Import.NoFoundation
 import           Text.Hamlet              (hamletFile)
 import           Text.Jasmine             (minifym)
-
--- Used only when in "auth-dummy-login" setting is enabled.
-import           Yesod.Auth.Dummy
 import           Yesod.Auth.OAuth2.Twitch
 
 import qualified Data.CaseInsensitive     as CI
@@ -175,15 +172,16 @@ instance Yesod App where
     Bool ->
     Handler AuthResult
   -- Routes not requiring authentication.
-  isAuthorized (AuthR _) _   = pure Authorized
-  isAuthorized HomeR _       = pure Authorized
-  isAuthorized FaviconR _    = pure Authorized
-  isAuthorized RobotsR _     = pure Authorized
-  isAuthorized (StaticR _) _ = pure Authorized
+  isAuthorized (AuthR _) _    = pure Authorized
+  isAuthorized HomeR _        = pure Authorized
+  isAuthorized FaviconR _     = pure Authorized
+  isAuthorized RobotsR _      = pure Authorized
+  isAuthorized (StaticR _) _  = pure Authorized
   -- the profile route requires that the user is authenticated, so we
   -- delegate to that function
-  isAuthorized ProfileR _    = isAuthenticated
-  isAuthorized FollowersR _  = isAuthenticated
+  isAuthorized ProfileR _     = isAuthenticated
+  isAuthorized FollowersR _   = isAuthenticated
+  isAuthorized SubscribersR _ = isAuthenticated
 
   -- This function creates static content files in the static folder
   -- and names them based on a hash of their content. This allows
@@ -285,10 +283,13 @@ instance YesodAuth App where
 
   -- You can add other plugins like Google Email, email or OAuth here
   authPlugins :: App -> [AuthPlugin App]
-  authPlugins app = oauth2Twitch twitchSettingsClientId twitchSettingsClientSecret : extraAuthPlugins
+  authPlugins app =
+    [ oauth2TwitchScoped
+      ["user:read:email", "channel:read:subscriptions"]
+      twitchSettingsClientId
+      twitchSettingsClientSecret
+    ]
     where
-      -- Enable authDummy login if enabled.
-      extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
       TwitchSettings {..} = appTwitchSettings $ appSettings app
 
 -- | Access function to determine if a user is logged in.

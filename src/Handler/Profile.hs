@@ -12,5 +12,5 @@ getProfileR :: Handler Html
 getProfileR = do
   (_, user) <- requireAuthPair
   defaultLayout $ do
-    setTitle . toHtml $ twitchUserIdent user <> "'s User page"
+    setTitle $ toHtml @Text "Profile"
     $(widgetFile "profile")

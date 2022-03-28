@@ -95,12 +95,14 @@ instance FromJSON AppSettings where
 data TwitchSettings = TwitchSettings
   { twitchSettingsClientId     :: Text
   , twitchSettingsClientSecret :: Text
+  , twitchSettingsStreamerId   :: Integer
   }
 
 instance FromJSON TwitchSettings where
   parseJSON = withObject "TwitchSettings" $ \o -> do
     twitchSettingsClientId <- o .: "client-id"
     twitchSettingsClientSecret <- o .: "client-secret"
+    twitchSettingsStreamerId <- o .: "streamer-id"
     pure TwitchSettings {..}
 
 {- | Settings for 'widgetFile', such as which template languages to support and

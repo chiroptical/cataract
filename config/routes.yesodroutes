@@ -12,3 +12,4 @@
 /profile ProfileR GET
 
 /twitch/followers FollowersR GET
+/twitch/subscribers SubscribersR GET

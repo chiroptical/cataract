@@ -14,12 +14,9 @@ import Network.Wreq
 import Data.Kind (Type)
 import Import.NoFoundation hiding (responseBody)
 import Data.Text.Encoding qualified as Text
+import Data.Twitch
 
 data TwitchMethod = GET | POST
-  deriving Show
-
-data TwitchError =
-  UnableToFetchCredentials
   deriving Show
 
 class TwitchRequest endpoint where
@@ -36,11 +33,11 @@ class TwitchRequest endpoint where
   twitchRequestPath :: TwitchRequest endpoint => String
 
   -- | The query parameters, combined with 'defaults' to build options
-  twitchQueryParams :: TwitchRequest endpoint => [(Text, Text)]
+  twitchQueryParams :: TwitchRequest endpoint => endpoint -> [(Text, Text)]
 
-  twitchRequestOptions :: TwitchRequest endpoint => Options
-  twitchRequestOptions =
-    let queryParams = twitchQueryParams @endpoint
+  twitchRequestOptions :: TwitchRequest endpoint => endpoint -> Options
+  twitchRequestOptions endpoint =
+    let queryParams = twitchQueryParams endpoint
      in foldl' (\acc (name, val) -> acc & param name .~ [val]) defaults queryParams
 
   twitchRequest ::
@@ -50,12 +47,13 @@ class TwitchRequest endpoint where
     , ToJSON (TwitchPayload endpoint)
     , FromJSON (TwitchResponse endpoint)
     ) =>
+    endpoint ->
     Text ->
     TwitchCredentials ->
     TwitchPayload endpoint ->
     m (Either TwitchError (TwitchResponse endpoint))
-  twitchRequest clientId TwitchCredentials {..} payload = do
-    let opts = twitchRequestOptions @endpoint
+  twitchRequest endpoint clientId TwitchCredentials {..} payload = do
+    let opts = twitchRequestOptions endpoint
                 & header "Authorization" .~ ["Bearer " <> Text.encodeUtf8 twitchCredentialsAccessToken]
                 & header "Client-Id" .~ [Text.encodeUtf8 clientId]
         method = twitchRequestMethod @endpoint
