@@ -11,19 +11,19 @@
 
 module Foundation where
 
-import           Control.Monad.Logger     (LogSource)
-import qualified Data.Map.Strict          as Map
-import           Database.Persist.Sql     (ConnectionPool, runSqlPool)
+import           Control.Monad.Logger       (LogSource)
+import qualified Data.Map.Strict            as Map
+import           Database.Persist.Sql       (ConnectionPool, runSqlPool)
 import           Import.NoFoundation
-import           Text.Hamlet              (hamletFile)
-import           Text.Jasmine             (minifym)
-import           Yesod.Auth.OAuth2.Twitch
+import           Text.Hamlet                (hamletFile)
+import           Text.Jasmine               (minifym)
+import           Yesod.Auth.OAuth2.MyTwitch
 
-import qualified Data.CaseInsensitive     as CI
-import qualified Data.Text.Encoding       as TE
-import           Yesod.Core.Types         (Logger)
-import qualified Yesod.Core.Unsafe        as Unsafe
-import           Yesod.EmbeddedStatic     (EmbeddedStatic, embedStaticContent)
+import qualified Data.CaseInsensitive       as CI
+import qualified Data.Text.Encoding         as TE
+import           Yesod.Core.Types           (Logger)
+import qualified Yesod.Core.Unsafe          as Unsafe
+import           Yesod.EmbeddedStatic       (EmbeddedStatic, embedStaticContent)
 
 {- | The foundation datatype for your application. This can be a good place to
  keep settings and values requiring initialization before your application
@@ -285,9 +285,15 @@ instance YesodAuth App where
   authPlugins :: App -> [AuthPlugin App]
   authPlugins app =
     [ oauth2TwitchScoped
-      ["user:read:email", "channel:read:subscriptions"]
-      twitchSettingsClientId
-      twitchSettingsClientSecret
+        "twitch as user (likely you)"
+        ["user:read:email"]
+        twitchSettingsClientId
+        twitchSettingsClientSecret
+    , oauth2TwitchScoped
+        "twitch as streamer (likely not you)"
+        ["user:read:email", "channel:read:subscriptions"]
+        twitchSettingsClientId
+        twitchSettingsClientSecret
     ]
     where
       TwitchSettings {..} = appTwitchSettings $ appSettings app

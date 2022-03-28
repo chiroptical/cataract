@@ -28,6 +28,7 @@ library
       Request.Twitch.Subscribers
       Settings
       Settings.StaticFiles
+      Yesod.Auth.OAuth2.MyTwitch
   other-modules:
       Paths_pluto
   hs-source-dirs:
