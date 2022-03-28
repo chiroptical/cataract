@@ -17,7 +17,6 @@ early work in progress.
 Next steps
 ---
 
-- Actually deploy the container to Heroku that communicates with the Postgresql database on Heroku
+- Display followers and subscribers onto the overlay
 - Setup `EventSource` watchers and move a rectangle across the screen via an API request
-- Authentication with Twitch and get token for API requests
 - Subscribe to streamer's follows, subscriptions, and bits webhooks
