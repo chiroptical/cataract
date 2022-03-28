@@ -257,8 +257,10 @@ instance YesodAuth App where
     m (AuthenticationResult App)
   authenticate Creds {..} = liftHandler $
     runDB $ do
+      -- TODO: Ensure that users log in with the correct scopes!
       x <- getBy $ UniqueTwitchUser credsIdent
       let credsExtraMap = Map.fromList credsExtra
+          mScopes = Map.lookup "scope" credsExtraMap
           -- TODO: accessToken and refreshToken should be encrypted probably
           mkTwitchCredentials twitchUserId =
                         TwitchCredentials
