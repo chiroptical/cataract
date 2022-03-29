@@ -55,8 +55,8 @@ oauth2TwitchScoped displayText scopes clientId clientSecret =
 
 newtype UserResponse =
   UserResponse
-    { userResponseScope :: [Text]
+    { userResponseScopes :: [Text]
     }
 
 instance FromJSON UserResponse where
-  parseJSON = withObject "UserResponse" $ \o -> UserResponse <$> o .: "scope"
+  parseJSON = withObject "UserResponse" $ \o -> UserResponse <$> o .: "scopes"

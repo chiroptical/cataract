@@ -278,7 +278,7 @@ instance YesodAuth App where
       case mUserResponse of
         Nothing -> pure $ ServerError "Unable to decode user response from Twitch"
         Just UserResponse {..} ->
-          if credsIdent /= tshow twitchSettingsStreamerId && userResponseScope /= ["user:read:email"]
+          if credsIdent /= tshow twitchSettingsStreamerId && userResponseScopes /= ["user:read:email"]
              then pure . UserError $ IdentifierNotFound "Log in as user"
              else
                 case mTwitchUserIdent of
