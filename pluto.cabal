@@ -15,6 +15,7 @@ library
       Foundation
       Handler.Common
       Handler.Home
+      Handler.Overlay
       Handler.Profile
       Handler.Twitch.Followers
       Handler.Twitch.Subscribers

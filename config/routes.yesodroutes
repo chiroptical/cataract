@@ -11,5 +11,7 @@
 
 /profile ProfileR GET
 
+/overlay OverlayR GET
+
 /twitch/followers FollowersR GET
 /twitch/subscribers SubscribersR GET

@@ -176,6 +176,7 @@ instance Yesod App where
   -- Routes not requiring authentication.
   isAuthorized (AuthR _) _    = pure Authorized
   isAuthorized HomeR _        = pure Authorized
+  isAuthorized OverlayR _     = pure Authorized
   isAuthorized FaviconR _     = pure Authorized
   isAuthorized RobotsR _      = pure Authorized
   isAuthorized (StaticR _) _  = pure Authorized
