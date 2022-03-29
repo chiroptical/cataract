@@ -46,6 +46,7 @@ dependencies:
 - wai
 - wreq
 - foreign-store
+- text-conversions
 
 default-extensions:
 - ImportQualifiedPost

@@ -69,6 +69,7 @@ library
     , shakespeare
     , template-haskell
     , text
+    , text-conversions
     , time
     , unordered-containers
     , vector
@@ -131,6 +132,7 @@ executable pluto
     , shakespeare
     , template-haskell
     , text
+    , text-conversions
     , time
     , unordered-containers
     , vector
@@ -199,6 +201,7 @@ test-suite pluto-test
     , shakespeare
     , template-haskell
     , text
+    , text-conversions
     , time
     , unordered-containers
     , vector

@@ -2,8 +2,6 @@
 {-# LANGUAGE GeneralizedNewtypeDeriving #-}
 {-# LANGUAGE InstanceSigs               #-}
 {-# LANGUAGE MultiParamTypeClasses      #-}
-{-# LANGUAGE NoImplicitPrelude          #-}
-{-# LANGUAGE OverloadedStrings          #-}
 {-# LANGUAGE RankNTypes                 #-}
 {-# LANGUAGE RecordWildCards            #-}
 {-# LANGUAGE TemplateHaskell            #-}
@@ -19,8 +17,12 @@ import           Text.Hamlet                (hamletFile)
 import           Text.Jasmine               (minifym)
 import           Yesod.Auth.OAuth2.MyTwitch
 
+import           Data.Aeson
+import qualified Data.ByteString.Lazy       as LBS
 import qualified Data.CaseInsensitive       as CI
+import           Data.Text.Conversions
 import qualified Data.Text.Encoding         as TE
+import           Yesod.Auth.Message
 import           Yesod.Core.Types           (Logger)
 import qualified Yesod.Core.Unsafe          as Unsafe
 import           Yesod.EmbeddedStatic       (EmbeddedStatic, embedStaticContent)
@@ -255,44 +257,56 @@ instance YesodAuth App where
     (MonadHandler m, HandlerSite m ~ App) =>
     Creds App ->
     m (AuthenticationResult App)
-  authenticate Creds {..} = liftHandler $
-    runDB $ do
+  authenticate Creds {..} = do
+    TwitchSettings {..} <- appTwitchSettings <$> getsYesod appSettings
+    liftHandler . runDB $ do
       -- TODO: Ensure that users log in with the correct scopes!
-      x <- getBy $ UniqueTwitchUser credsIdent
+      mTwitchUserIdent <- getBy $ UniqueTwitchUser credsIdent
       let credsExtraMap = Map.fromList credsExtra
-          mScopes = Map.lookup "scope" credsExtraMap
+          mUserResponseBS :: Maybe LBS.ByteString
+          mUserResponseBS = unUTF8 . fromText <$> Map.lookup "userResponse" credsExtraMap
+          mUserResponse = join $ decode @UserResponse <$> mUserResponseBS
           -- TODO: accessToken and refreshToken should be encrypted probably
           mkTwitchCredentials twitchUserId =
                         TwitchCredentials
                           <$> Map.lookup "accessToken" credsExtraMap
                           <*> Map.lookup "refreshToken" credsExtraMap
                           <*> pure twitchUserId
-      case x of
-        Just (Entity uid _) -> do
-          forM_ (mkTwitchCredentials uid) $ \tc@TwitchCredentials {..} ->
-            void $ upsert tc
-              [ TwitchCredentialsAccessToken =. twitchCredentialsAccessToken
-              , TwitchCredentialsRefreshToken =. twitchCredentialsRefreshToken
-              ]
-          pure $ Authenticated uid
-        Nothing -> do
-          twitchUserId <- insert
-              TwitchUser
-                { twitchUserIdent = credsIdent
-                }
-          forM_ (mkTwitchCredentials twitchUserId) insert_
-          pure $ Authenticated twitchUserId
+
+      -- TODO: Need to test this with some other user
+      -- TODO: Can we clean this logic up at all?
+      case mUserResponse of
+        Nothing -> pure $ ServerError "Unable to decode user response from Twitch"
+        Just UserResponse {..} ->
+          if credsIdent /= tshow twitchSettingsStreamerId && userResponseScope /= ["user:read:email"]
+             then pure . UserError $ IdentifierNotFound "Log in as user"
+             else
+                case mTwitchUserIdent of
+                    Just (Entity uid _) -> do
+                      forM_ (mkTwitchCredentials uid) $ \tc@TwitchCredentials {..} ->
+                        void $ upsert tc
+                          [ TwitchCredentialsAccessToken =. twitchCredentialsAccessToken
+                          , TwitchCredentialsRefreshToken =. twitchCredentialsRefreshToken
+                          ]
+                      pure $ Authenticated uid
+                    Nothing -> do
+                      twitchUserId <- insert
+                          TwitchUser
+                            { twitchUserIdent = credsIdent
+                            }
+                      forM_ (mkTwitchCredentials twitchUserId) insert_
+                      pure $ Authenticated twitchUserId
 
   -- You can add other plugins like Google Email, email or OAuth here
   authPlugins :: App -> [AuthPlugin App]
   authPlugins app =
     [ oauth2TwitchScoped
-        "twitch as user (likely you)"
+        "Login with Twitch as user (this is you)"
         ["user:read:email"]
         twitchSettingsClientId
         twitchSettingsClientSecret
     , oauth2TwitchScoped
-        "twitch as streamer (likely not you)"
+        "Login via Twitch as streamer (this is not you)"
         ["user:read:email", "channel:read:subscriptions"]
         twitchSettingsClientId
         twitchSettingsClientSecret

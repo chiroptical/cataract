@@ -1,3 +1,4 @@
+{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
 -- |
 --
@@ -5,28 +6,37 @@
 -- Want ability to override the 'pluginName'
 module Yesod.Auth.OAuth2.MyTwitch
   ( oauth2TwitchScoped
+  , UserResponse (..)
   ) where
 
 import Import.NoFoundation
 import Yesod.Auth.OAuth2.Prelude
 
 import qualified Data.Text.Encoding as T
+import Yesod.Auth.OAuth2
 
 newtype User = User Text
 
 instance FromJSON User where
   parseJSON = withObject "User" $ \o -> User <$> o .: "user_id"
 
+pluginName :: Text
+pluginName = "twitch"
+
+-- | NOTE: When you need more customization just bring in 'authOAuth2Widget'
+myAuthOAuth2 :: YesodAuth m => Text -> Text -> OAuth2 -> FetchCreds m -> AuthPlugin m
+myAuthOAuth2 display name = authOAuth2Widget [whamlet|#{display}|] name
+
 oauth2TwitchScoped :: YesodAuth m => Text -> [Text] -> Text -> Text -> AuthPlugin m
-oauth2TwitchScoped loginWithText scopes clientId clientSecret =
-  authOAuth2 loginWithText oauth2 $ \manager token -> do
+oauth2TwitchScoped displayText scopes clientId clientSecret =
+  myAuthOAuth2 displayText pluginName oauth2 $ \manager token -> do
     (User userId, userResponse) <- authGetProfile
-      loginWithText
+      pluginName
       manager
       token
       "https://id.twitch.tv/oauth2/validate"
 
-    pure Creds { credsPlugin = loginWithText
+    pure Creds { credsPlugin = pluginName
                , credsIdent  = userId
                , credsExtra  = setExtra token userResponse
                }
@@ -42,3 +52,11 @@ oauth2TwitchScoped loginWithText scopes clientId clientSecret =
                                               ]
     , oauth2RedirectUri       = Nothing
     }
+
+newtype UserResponse =
+  UserResponse
+    { userResponseScope :: [Text]
+    }
+
+instance FromJSON UserResponse where
+  parseJSON = withObject "UserResponse" $ \o -> UserResponse <$> o .: "scope"
