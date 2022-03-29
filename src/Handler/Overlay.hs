@@ -18,7 +18,10 @@ emptyLayout w = do
             ^{pageBody p}
         |]
 
--- | Example: https://overlay.player.me/qfRbSKTkajToTzfO
+-- | Notes
+--
+-- - example overlay: https://overlay.player.me/qfRbSKTkajToTzfO
+-- - svg.js: https://svgjs.dev/docs/3.1
 getOverlayR :: Handler Html
 getOverlayR = emptyLayout $ do
   setTitle "Overlay"
