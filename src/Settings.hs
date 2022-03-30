@@ -95,7 +95,7 @@ instance FromJSON AppSettings where
 data TwitchSettings = TwitchSettings
   { twitchSettingsClientId     :: Text
   , twitchSettingsClientSecret :: Text
-  , twitchSettingsStreamerId   :: Integer
+  , twitchSettingsStreamerId   :: Text
   }
 
 instance FromJSON TwitchSettings where

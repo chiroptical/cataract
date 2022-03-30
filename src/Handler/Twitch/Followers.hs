@@ -12,7 +12,7 @@ getFollowersR = do
   case eTwitchCredentials of
     Left e -> sendStatusJSON status401 e
     Right creds -> do
-      let followersRequest = Followers $ tshow twitchSettingsStreamerId
+      let followersRequest = Followers twitchSettingsStreamerId
       eResponse <- twitchRequest followersRequest twitchSettingsClientId creds FollowersPayload
       case eResponse of
         -- TODO: Probably should just send exceptions directly to the client?

@@ -1,0 +1,16 @@
+var draw = SVG('#overlay')
+
+var followerCount = document.getElementById('followerCount').innerHTML
+var subscriberCount = document.getElementById('subscriberCount').innerHTML
+
+var text = draw.text(function(add) {
+  add.tspan('Followers: ' + followerCount).fill('#975df9').newLine()
+  add.tspan('Subscribers: ' + subscriberCount).fill('#975df9')
+})
+
+text.font(
+  {
+    family:   'Helvetica',
+    size:     72,
+  }
+)

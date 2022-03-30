@@ -278,8 +278,8 @@ instance YesodAuth App where
       -- TODO: Can we clean this logic up at all?
       case mUserResponse of
         Nothing -> pure $ ServerError "Unable to decode user response from Twitch"
-        Just UserResponse {..} ->
-          if credsIdent /= tshow twitchSettingsStreamerId && userResponseScopes /= ["user:read:email"]
+        Just UserResponse {..} -> do
+          if credsIdent /= twitchSettingsStreamerId && userResponseScopes /= ["user:read:email"]
              then pure . UserError $ IdentifierNotFound "Log in as user"
              else
                 case mTwitchUserIdent of
@@ -303,11 +303,13 @@ instance YesodAuth App where
   authPlugins app =
     [ oauth2TwitchScoped
         "Login with Twitch as user (this is you)"
+        "twitch-user"
         ["user:read:email"]
         twitchSettingsClientId
         twitchSettingsClientSecret
     , oauth2TwitchScoped
         "Login via Twitch as streamer (this is not you)"
+        "twitch-streamer"
         ["user:read:email", "channel:read:subscriptions"]
         twitchSettingsClientId
         twitchSettingsClientSecret
