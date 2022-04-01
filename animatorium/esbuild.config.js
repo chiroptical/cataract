@@ -7,7 +7,7 @@ esbuildServe(
     logLevel: "info",
     entryPoints: ["src/basic.js"],
     bundle: true,
-    outfile: "dist/basic.js",
+    outfile: "public/basic.js",
   },
-  { root: "dist" }
+  { root: "public" }
 );
