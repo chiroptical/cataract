@@ -16,8 +16,8 @@ pkgs.mkShell {
 
     # animatorium
     nodejs
+    esbuild
     nodePackages.npm
-    nodePackages.nodemon
   ];
   withHoogle = true;
 }
