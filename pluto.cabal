@@ -17,6 +17,7 @@ library
       Handler.Home
       Handler.Overlay
       Handler.Profile
+      Handler.ServerSentEvents
       Handler.Twitch.Followers
       Handler.Twitch.Subscribers
       Handler.Twitch.Utils

@@ -174,17 +174,19 @@ instance Yesod App where
     Bool ->
     Handler AuthResult
   -- Routes not requiring authentication.
-  isAuthorized (AuthR _) _    = pure Authorized
-  isAuthorized HomeR _        = pure Authorized
-  isAuthorized OverlayR _     = pure Authorized
-  isAuthorized FaviconR _     = pure Authorized
-  isAuthorized RobotsR _      = pure Authorized
-  isAuthorized (StaticR _) _  = pure Authorized
+  isAuthorized (AuthR _) _         = pure Authorized
+  isAuthorized HomeR _             = pure Authorized
+  isAuthorized OverlayR _          = pure Authorized
+  isAuthorized FaviconR _          = pure Authorized
+  isAuthorized RobotsR _           = pure Authorized
+  isAuthorized (StaticR _) _       = pure Authorized
+  isAuthorized ServerSentEventsR _ = pure Authorized
+
   -- the profile route requires that the user is authenticated, so we
   -- delegate to that function
-  isAuthorized ProfileR _     = isAuthenticated
-  isAuthorized FollowersR _   = isAuthenticated
-  isAuthorized SubscribersR _ = isAuthenticated
+  isAuthorized ProfileR _          = isAuthenticated
+  isAuthorized FollowersR _        = isAuthenticated
+  isAuthorized SubscribersR _      = isAuthenticated
 
   -- This function creates static content files in the static folder
   -- and names them based on a hash of their content. This allows

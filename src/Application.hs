@@ -53,6 +53,7 @@ import           Handler.Common
 import           Handler.Home
 import           Handler.Overlay
 import           Handler.Profile
+import           Handler.ServerSentEvents
 import           Handler.Twitch.Followers
 import           Handler.Twitch.Subscribers
 

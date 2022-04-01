@@ -15,3 +15,5 @@
 
 /twitch/followers FollowersR GET
 /twitch/subscribers SubscribersR GET
+
+/sse ServerSentEventsR GET
