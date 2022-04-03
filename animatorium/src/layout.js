@@ -6,16 +6,16 @@ document.addEventListener('DOMContentLoaded', (event) => {
   draw
     .plain('Followers 1234')
     .fill('#975efb')
-    .font({family: 'Helvetica', size: 24})
-    .cx(1525)
-    .cy(790)
+    .font({family: 'Helvetica', size: 32})
+    .dx(1435)
+    .dy(800)
 
   draw
     .plain('Subscribers 12')
     .fill('#975efb')
-    .font({family: 'Helvetica', size: 24})
-    .cx(1830)
-    .cy(790)
+    .font({family: 'Helvetica', size: 32})
+    .dx(1695)
+    .dy(800)
 
   var snailGradient =
     draw.gradient('linear', function(add) {
