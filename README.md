@@ -17,6 +17,6 @@ early work in progress.
 Next steps
 ---
 
-- Display followers and subscribers onto the overlay
-- Setup `EventSource` watchers and move a rectangle across the screen via an API request
 - Subscribe to streamer's follows, subscriptions, and bits webhooks
+- Save follows, subscriptions, and bits as events in the database
+- Event source handler should read events and push them
