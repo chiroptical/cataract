@@ -18,5 +18,6 @@ Next steps
 ---
 
 - Subscribe to streamer's follows, subscriptions, and bits webhooks
+  - Start here: https://dev.twitch.tv/docs/eventsub/handling-webhook-events
 - Save follows, subscriptions, and bits as events in the database
 - Event source handler should read events and push them
