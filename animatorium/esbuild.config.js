@@ -5,9 +5,10 @@ import esbuildServe from "esbuild-serve";
 esbuildServe(
   {
     logLevel: "info",
-    entryPoints: ["src/basic.js"],
+    // entryPoints: ["src/textAnimations.js"],
+    entryPoints: ["src/layout.js"],
     bundle: true,
-    outfile: "public/basic.js",
+    outfile: "public/index.js",
   },
   { root: "public" }
 );
