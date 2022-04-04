@@ -26,6 +26,12 @@ pkgs.mkShell {
 
     # required for 'make test' hedgehog output
     glibcLocales
+
+    # elm
+    elmPackages.elm
+    elmPackages.elm-format
+    elmPackages.elm-test
+    elmPackages.elm-language-server
   ];
   withHoogle = true;
   # required for 'make test' hedgehog output
