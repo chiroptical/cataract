@@ -32,4 +32,9 @@ clean: hpack
 hlint: hpack
 	hlint .
 
-.PHONY: build hpack run docker-build docker-run format-nix format-haskell format ghcid clean hlint
+repl: ghci
+
+ghci: hpack
+	cabal repl
+
+.PHONY: build hpack run docker-build docker-run format-nix format-haskell format ghcid clean hlint repl ghci

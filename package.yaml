@@ -50,6 +50,7 @@ dependencies:
 - yesod-static
 
 default-extensions:
+- DeriveGeneric
 - ImportQualifiedPost
 - NoImplicitPrelude
 - OverloadedStrings

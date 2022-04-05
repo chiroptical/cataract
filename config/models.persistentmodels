@@ -1,7 +1,7 @@
 -- By default this file is used by `persistFileWith` in Model.hs (which is imported by Foundation.hs)
 -- Syntax for this file here: https://github.com/yesodweb/persistent/blob/master/docs/Persistent-entity-syntax.md
 
-TwitchUser
+TwitchUser sql=twitch_users
   ident Text
   UniqueTwitchUser ident
   deriving Typeable
@@ -12,3 +12,19 @@ TwitchCredentials
   twitchUserId TwitchUserId
   UniqueTwitchUserId twitchUserId
   deriving Show
+
+Queue
+  eventKind Text
+  completed Bool
+
+FollowerEvent sql=follower_events
+  queueId QueueId
+  twitchUserName Text
+  Primary queueId
+
+SubscriberEvent sql=subscriber_events
+  queueId QueueId
+  twitchUserName Text
+  subscriptionDuration Int
+  wasGifted Bool
+  Primary queueId
