@@ -52,6 +52,7 @@ dependencies:
 default-extensions:
 - DeriveGeneric
 - ImportQualifiedPost
+- LambdaCase
 - NoImplicitPrelude
 - OverloadedStrings
 - RecordWildCards

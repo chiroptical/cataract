@@ -181,6 +181,9 @@ instance Yesod App where
   isAuthorized RobotsR _           = pure Authorized
   isAuthorized (StaticR _) _       = pure Authorized
   isAuthorized ServerSentEventsR _ = pure Authorized
+  -- TODO: This is only authorized when the HMAC signature is valid
+  -- See https://dev.twitch.tv/docs/eventsub/handling-webhook-events#verifying-the-event-message
+  isAuthorized TwitchWebhookR _    = pure Authorized
 
   -- the profile route requires that the user is authenticated, so we
   -- delegate to that function

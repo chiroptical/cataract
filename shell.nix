@@ -1,4 +1,8 @@
-{pkgs, ...}:
+{
+  pkgs,
+  twitch-cli,
+  ...
+}:
 pkgs.mkShell {
   inputsFrom = [
     (import ./pluto.nix pkgs).env
@@ -13,6 +17,7 @@ pkgs.mkShell {
     haskellPackages.retrie
     niv
     alejandra
+    twitch-cli
 
     # animatorium
     nodejs

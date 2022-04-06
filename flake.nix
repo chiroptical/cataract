@@ -19,8 +19,12 @@
       };
       pluto = pkgs.callPackage ./pluto.nix {};
       docker = pkgs.callPackage ./docker.nix {};
+      twitch-cli = pkgs.callPackage ./nix/twitch-cli.nix {};
     in {
-      devShell = import ./shell.nix pkgs;
+      devShell = import ./shell.nix {
+        inherit pkgs;
+        inherit twitch-cli;
+      };
       defaultPackage = pluto;
       packages = flake-utils.lib.flattenTree {
         inherit pluto;

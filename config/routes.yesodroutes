@@ -15,5 +15,6 @@
 
 /twitch/followers FollowersR GET
 /twitch/subscribers SubscribersR GET
+/twitch/webhooks TwitchWebhookR POST
 
 /sse ServerSentEventsR GET
