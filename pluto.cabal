@@ -59,6 +59,7 @@ library
     , classy-prelude-conduit
     , classy-prelude-yesod
     , conduit
+    , conduit-extra
     , containers
     , cryptonite
     , data-default
@@ -71,6 +72,7 @@ library
     , http-client-tls
     , http-conduit
     , lens
+    , memory
     , monad-control
     , monad-logger
     , persistent
@@ -124,6 +126,7 @@ executable pluto
     , classy-prelude-conduit
     , classy-prelude-yesod
     , conduit
+    , conduit-extra
     , containers
     , cryptonite
     , data-default
@@ -136,6 +139,7 @@ executable pluto
     , http-client-tls
     , http-conduit
     , lens
+    , memory
     , monad-control
     , monad-logger
     , persistent
@@ -195,6 +199,7 @@ test-suite pluto-test
     , classy-prelude-conduit
     , classy-prelude-yesod
     , conduit
+    , conduit-extra
     , containers
     , cryptonite
     , data-default
@@ -208,6 +213,7 @@ test-suite pluto-test
     , http-client-tls
     , http-conduit
     , lens
+    , memory
     , monad-control
     , monad-logger
     , persistent

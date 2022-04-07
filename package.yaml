@@ -10,6 +10,7 @@ dependencies:
 - classy-prelude-conduit
 - classy-prelude-yesod
 - conduit
+- conduit-extra
 - containers
 - cryptonite
 - data-default
@@ -22,6 +23,7 @@ dependencies:
 - http-client-tls
 - http-conduit
 - lens
+- memory
 - monad-control
 - monad-logger
 - persistent
