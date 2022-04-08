@@ -19,7 +19,7 @@ format-nix:
 	alejandra .
 
 format-haskell:
-	stylish-haskell -i **/*.hs
+	find app/ src/ test/ -name "*.hs" -exec stylish-haskell -i {} +
 
 format: format-nix format-haskell
 

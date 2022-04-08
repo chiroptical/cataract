@@ -1,8 +1,8 @@
 module Data.Event where
 
-import Import.NoFoundation
 import Data.Event.Follower
 import Data.Event.Subscriber
+import Import.NoFoundation
 
 data Event =
     NewFollower Follower

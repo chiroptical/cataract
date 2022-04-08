@@ -6,7 +6,7 @@
 
 module Handler.Profile where
 
-import           Import
+import Import
 
 getProfileR :: Handler Html
 getProfileR = do

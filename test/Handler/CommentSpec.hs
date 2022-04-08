@@ -3,8 +3,8 @@
 
 module Handler.CommentSpec (spec) where
 
-import           Data.Aeson
-import           TestImport
+import Data.Aeson
+import TestImport
 
 spec :: Spec
 spec = withApp $ do

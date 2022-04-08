@@ -1,14 +1,14 @@
-{-# LANGUAGE TemplateHaskell #-}
-{-# LANGUAGE QuasiQuotes #-}
+{-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
+{-# LANGUAGE TemplateHaskell     #-}
 module Handler.Overlay where
 
-import Import
 import Database.Esqueleto.Experimental qualified as Db
-import Request.Twitch.Sql (queryCredentialsFromIdent)
+import Import
+import Request.Twitch                  (twitchRequest)
 import Request.Twitch.Followers
+import Request.Twitch.Sql              (queryCredentialsFromIdent)
 import Request.Twitch.Subscribers
-import Request.Twitch (twitchRequest)
 
 emptyLayout :: Yesod site => WidgetFor site () -> HandlerFor site Html
 emptyLayout w = do

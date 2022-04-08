@@ -2,10 +2,10 @@
 
 module Handler.ServerSentEvents where
 
-import Import
-import Yesod.EventSource
-import Network.Wai.EventSource.EventStream
 import Control.Concurrent
+import Import
+import Network.Wai.EventSource.EventStream
+import Yesod.EventSource
 
 getServerSentEventsR :: Handler TypedContent
 getServerSentEventsR = pollingEventSource () serverSentEventsGenerator

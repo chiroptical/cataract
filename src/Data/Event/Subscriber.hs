@@ -4,9 +4,9 @@ import Import.NoFoundation
 
 data Subscriber =
   Subscriber
-    { twitchUserName :: Text
+    { twitchUserName       :: Text
     , subscriptionDuration :: Int
-    , wasGifted :: Bool
+    , wasGifted            :: Bool
     }
     deriving Generic
 

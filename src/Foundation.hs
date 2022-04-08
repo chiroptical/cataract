@@ -9,23 +9,23 @@
 
 module Foundation where
 
-import           Control.Monad.Logger       (LogSource)
-import qualified Data.Map.Strict            as Map
-import           Database.Persist.Sql       (ConnectionPool, runSqlPool)
-import           Import.NoFoundation
-import           Text.Hamlet                (hamletFile)
-import           Text.Jasmine               (minifym)
-import           Yesod.Auth.OAuth2.MyTwitch
+import Control.Monad.Logger       (LogSource)
+import Data.Map.Strict            qualified as Map
+import Database.Persist.Sql       (ConnectionPool, runSqlPool)
+import Import.NoFoundation        hiding (requestHeaders)
+import Text.Hamlet                (hamletFile)
+import Text.Jasmine               (minifym)
+import Yesod.Auth.OAuth2.MyTwitch
 
-import           Data.Aeson
-import qualified Data.ByteString.Lazy       as LBS
-import qualified Data.CaseInsensitive       as CI
-import           Data.Text.Conversions
-import qualified Data.Text.Encoding         as TE
-import           Yesod.Auth.Message
-import           Yesod.Core.Types           (Logger)
-import qualified Yesod.Core.Unsafe          as Unsafe
-import           Yesod.EmbeddedStatic       (EmbeddedStatic, embedStaticContent)
+import Data.Aeson
+import Data.ByteString.Lazy       qualified as LBS
+import Data.CaseInsensitive       qualified as CI
+import Data.Text.Conversions
+import Data.Text.Encoding         qualified as T
+import Yesod.Auth.Message
+import Yesod.Core.Types           (Logger)
+import Yesod.Core.Unsafe          qualified as Unsafe
+import Yesod.EmbeddedStatic       (EmbeddedStatic, embedStaticContent)
 
 {- | The foundation datatype for your application. This can be a good place to
  keep settings and values requiring initialization before your application
@@ -181,7 +181,6 @@ instance Yesod App where
   isAuthorized RobotsR _           = pure Authorized
   isAuthorized (StaticR _) _       = pure Authorized
   isAuthorized ServerSentEventsR _ = pure Authorized
-  -- TODO: This is only authorized when the HMAC signature is valid
   -- See https://dev.twitch.tv/docs/eventsub/handling-webhook-events#verifying-the-event-message
   isAuthorized TwitchWebhookR _    = pure Authorized
 

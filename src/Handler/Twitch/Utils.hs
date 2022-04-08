@@ -1,9 +1,9 @@
 module Handler.Twitch.Utils where
 
-import Import
-import Database.Esqueleto.Experimental qualified as Db
-import Request.Twitch.Sql (queryCredentials)
 import Data.Twitch
+import Database.Esqueleto.Experimental qualified as Db
+import Import
+import Request.Twitch.Sql              (queryCredentials)
 
 -- | Ensure the session contains a valid 'TwitchUser' and then
 -- grab their credentials
@@ -15,5 +15,5 @@ getTwitchCredentials = do
     Just twitchUserId -> do
       mTwitchCredentials <- runDB . Db.selectOne $ queryCredentials twitchUserId
       pure $ case mTwitchCredentials of
-        Nothing -> Left UnableToFetchCredentials
+        Nothing               -> Left UnableToFetchCredentials
         Just (Entity _ creds) -> Right creds

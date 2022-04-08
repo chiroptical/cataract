@@ -1,9 +1,9 @@
 module Handler.Twitch.Followers where
 
+import Handler.Twitch.Utils
 import Import
 import Request.Twitch
 import Request.Twitch.Followers
-import Handler.Twitch.Utils
 
 getFollowersR :: Handler Text
 getFollowersR = do
@@ -16,5 +16,5 @@ getFollowersR = do
       eResponse <- twitchRequest followersRequest twitchSettingsClientId creds FollowersPayload
       case eResponse of
         -- TODO: Probably should just send exceptions directly to the client?
-        Left e -> sendStatusJSON status500 e
+        Left e                       -> sendStatusJSON status500 e
         Right FollowersResponse {..} -> pure $ tshow followersResponseTotal

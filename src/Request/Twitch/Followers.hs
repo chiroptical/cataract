@@ -1,14 +1,14 @@
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE OverloadedStrings #-}
-{-# LANGUAGE DeriveGeneric #-}
-{-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE DeriveGeneric        #-}
+{-# LANGUAGE FlexibleContexts     #-}
+{-# LANGUAGE OverloadedStrings    #-}
+{-# LANGUAGE TypeFamilies         #-}
 {-# LANGUAGE UndecidableInstances #-}
 
 module Request.Twitch.Followers where
 
-import Request.Twitch
-import Import.NoFoundation hiding (GET)
 import Data.Aeson
+import Import.NoFoundation hiding (GET)
+import Request.Twitch
 
 newtype Followers = Followers
   { followersToId :: Text

@@ -1,8 +1,8 @@
 module AesonUtils where
 
-import           Data.Aeson.TH
-import           Data.Aeson.Types    (camelTo2)
-import           Import.NoFoundation
+import Data.Aeson.TH
+import Data.Aeson.Types    (camelTo2)
+import Import.NoFoundation
 
 camelToSnake :: String -> String
 camelToSnake = camelTo2 '_'

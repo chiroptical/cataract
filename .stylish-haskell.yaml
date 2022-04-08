@@ -292,7 +292,7 @@ steps:
       #   > import qualified Data.Foo as F
       #
       # Default: false
-      post_qualify: false
+      post_qualify: true
 
 
   # Language pragmas

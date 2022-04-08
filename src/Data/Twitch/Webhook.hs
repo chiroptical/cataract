@@ -2,9 +2,9 @@
 
 module Data.Twitch.Webhook where
 
-import Import.NoFoundation
-import Data.Aeson.TH
 import AesonUtils
+import Data.Aeson.TH
+import Import.NoFoundation
 
 newtype TwitchCondition =
   TwitchCondition
@@ -16,7 +16,7 @@ deriveJSON (jsonDeriveSnakeCaseDropPrefix "TwitchCondition") ''TwitchCondition
 
 data TwitchTransport =
   TwitchTransport
-    { twitchTransportMethod :: Text
+    { twitchTransportMethod   :: Text
     , twitchTransportCallback :: Text
     }
     deriving Show
@@ -45,20 +45,20 @@ instance FromJSON TwitchEventType where
 
 instance ToJSON TwitchEventType where
   toJSON = \case
-    FollowEvent -> "channel.follow"
-    SubscribeEvent -> "channel.subscribe"
-    GiftedSubscribeEvent -> "channel.subscription.gift"
-    CheerEvent -> "channel.cheer"
-    RaidEvent -> "channel.raid"
+    FollowEvent                 -> "channel.follow"
+    SubscribeEvent              -> "channel.subscribe"
+    GiftedSubscribeEvent        -> "channel.subscription.gift"
+    CheerEvent                  -> "channel.cheer"
+    RaidEvent                   -> "channel.raid"
     UserAuthorizationGrantEvent -> "user.authorization.grant"
 
 data TwitchSubscription =
   TwitchSubscription
-    { twitchSubscriptionId :: Text
-    , twitchSubscriptionStatus :: Text
-    , twitchSubscriptionType :: TwitchEventType
-    , twitchSubscriptionVersion :: Text
-    , twitchSubscriptionCost :: Int
+    { twitchSubscriptionId        :: Text
+    , twitchSubscriptionStatus    :: Text
+    , twitchSubscriptionType      :: TwitchEventType
+    , twitchSubscriptionVersion   :: Text
+    , twitchSubscriptionCost      :: Int
     , twitchSubscriptionCondition :: TwitchCondition
     , twitchSubscriptionTransport :: TwitchTransport
     , twitchSubscriptionCreatedAt :: Text
@@ -69,12 +69,12 @@ deriveJSON (jsonDeriveSnakeCaseDropPrefix "TwitchSubscription") ''TwitchSubscrip
 
 data TwitchEventDetails =
   TwitchEventDetails
-    { twitchEventDetailsUserId :: Text
-    , twitchEventDetailsUserLogin :: Text
-    , twitchEventDetailsUserName :: Text
-    , twitchEventDetailsBroadcasterUserId :: Text
+    { twitchEventDetailsUserId               :: Text
+    , twitchEventDetailsUserLogin            :: Text
+    , twitchEventDetailsUserName             :: Text
+    , twitchEventDetailsBroadcasterUserId    :: Text
     , twitchEventDetailsBroadcasterUserLogin :: Text
-    , twitchEventDetailsBroadcasterUserName :: Text
+    , twitchEventDetailsBroadcasterUserName  :: Text
     }
     deriving Show
 
@@ -83,7 +83,7 @@ deriveJSON (jsonDeriveSnakeCaseDropPrefix "TwitchEventDetails") ''TwitchEventDet
 data TwitchEvent =
   TwitchEvent
     { twitchEventSubscription :: TwitchSubscription
-    , twitchEventEvent :: TwitchEventDetails
+    , twitchEventEvent        :: TwitchEventDetails
     }
     deriving Show
 
@@ -91,7 +91,7 @@ deriveJSON (jsonDeriveSnakeCaseDropPrefix "TwitchEvent") ''TwitchEvent
 
 data TwitchChallenge =
   TwitchChallenge
-    { twitchChallengeChallenge :: Text
+    { twitchChallengeChallenge    :: Text
     , twitchChallengeSubscription :: TwitchSubscription
     }
     deriving Show

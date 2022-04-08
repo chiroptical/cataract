@@ -1,20 +1,20 @@
-{-# LANGUAGE TypeFamilies #-}
-{-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE AllowAmbiguousTypes     #-}
 {-# LANGUAGE ConstrainedClassMethods #-}
-{-# LANGUAGE ScopedTypeVariables #-}
-{-# LANGUAGE PolyKinds #-}
-{-# LANGUAGE FlexibleContexts #-}
-{-# LANGUAGE TypeApplications #-}
-{-# LANGUAGE AllowAmbiguousTypes #-}
+{-# LANGUAGE FlexibleContexts        #-}
+{-# LANGUAGE OverloadedStrings       #-}
+{-# LANGUAGE PolyKinds               #-}
+{-# LANGUAGE ScopedTypeVariables     #-}
+{-# LANGUAGE TypeApplications        #-}
+{-# LANGUAGE TypeFamilies            #-}
 
 module Request.Twitch where
 
 import Control.Lens
-import Network.Wreq
-import Data.Kind (Type)
-import Import.NoFoundation hiding (responseBody)
-import Data.Text.Encoding qualified as Text
+import Data.Kind           (Type)
+import Data.Text.Encoding  qualified as Text
 import Data.Twitch
+import Import.NoFoundation hiding (responseBody)
+import Network.Wreq
 
 data TwitchMethod = GET | POST
   deriving Show

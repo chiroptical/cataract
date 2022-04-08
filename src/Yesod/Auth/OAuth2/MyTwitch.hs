@@ -1,5 +1,5 @@
-{-# LANGUAGE QuasiQuotes #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE QuasiQuotes       #-}
 -- |
 --
 -- Borrowed from https://github.com/freckle/yesod-auth-oauth2/blob/main/src/Yesod/Auth/OAuth2/Twitch.hs
@@ -12,7 +12,7 @@ module Yesod.Auth.OAuth2.MyTwitch
 import Import.NoFoundation
 import Yesod.Auth.OAuth2.Prelude
 
-import qualified Data.Text.Encoding as T
+import Data.Text.Encoding        qualified as T
 import Yesod.Auth.OAuth2
 
 newtype User = User Text

@@ -1,10 +1,10 @@
-{-# LANGUAGE TypeApplications #-}
 {-# LANGUAGE OverloadedLabels #-}
+{-# LANGUAGE TypeApplications #-}
 
 module Request.Twitch.Sql where
 
 import Database.Esqueleto.Experimental
-import Import.NoFoundation hiding ((==.), on)
+import Import.NoFoundation             hiding (on, (==.))
 
 queryCredentials :: TwitchUserId -> SqlQuery (SqlExpr (Entity TwitchCredentials))
 queryCredentials twitchUserId = do
