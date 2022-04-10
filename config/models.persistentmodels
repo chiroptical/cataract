@@ -10,11 +10,12 @@ TwitchCredentials
   accessToken Text
   refreshToken Text
   twitchUserId TwitchUserId
+  -- TODO: twitchUserName Text
   UniqueTwitchUserId twitchUserId
   deriving Show
 
 Queue
-  eventKind Text
+  eventKind Event
   completed Bool
 
 FollowerEvent sql=follower_events
@@ -25,6 +26,16 @@ FollowerEvent sql=follower_events
 SubscriberEvent sql=subscriber_events
   queueId QueueId
   twitchUserName Text
-  subscriptionDuration Int
-  wasGifted Bool
+  Primary queueId
+
+CheerEvent sql=cheer_events
+  queueId QueueId
+  twitchUserName Text
+  bits Int
+  Primary queueId
+
+RaidEvent sql=raid_events
+  queueId QueueId
+  twitchUserName Text
+  viewers Int
   Primary queueId

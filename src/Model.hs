@@ -15,6 +15,7 @@
 module Model where
 
 import ClassyPrelude.Yesod
+import Data.Event
 import Database.Persist.Quasi
 
 -- You can define all of your database entities in the entities file.

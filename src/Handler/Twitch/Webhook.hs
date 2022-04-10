@@ -8,6 +8,7 @@ import Data.ByteArray.Encoding qualified as BA
 import Data.ByteString         qualified as BS
 import Data.Conduit.List       qualified as CL
 import Data.Conduit.Text       qualified as CT
+import Data.Event              (Event (..))
 import Data.Map                qualified as Map
 import Data.Text               qualified as T
 import Data.Text.Encoding      qualified as T
@@ -54,8 +55,42 @@ postTwitchWebhookR = do
               case mTwitchEvent of
                 Nothing -> sendStatusJSON status401 ("Unable to decode event" :: Text)
                 -- TODO: Store the event
-                Just te@TwitchEvent {} -> do
-                  print te
+                Just TwitchEvent
+                    { twitchEventSubscription = TwitchSubscription {..}
+                    , twitchEventEvent = event
+                    } -> do
+                  case (twitchSubscriptionType, event) of
+                    (FollowEventType, BaseEventDetails TwitchEventDetailsBase {..}) ->
+                      runDB $ do
+                        queueId <- insert $ Queue {queueEventKind = NewFollower, queueCompleted = False}
+                        insert_ $ FollowerEvent
+                            { followerEventQueueId = queueId
+                            , followerEventTwitchUserName = twitchEventDetailsBaseUserName
+                            }
+                    (SubscribeEventType, BaseEventDetails TwitchEventDetailsBase {..}) ->
+                      runDB $ do
+                        queueId <- insert $ Queue {queueEventKind = NewSubscriber, queueCompleted = False}
+                        insert_ $ SubscriberEvent
+                            { subscriberEventQueueId = queueId
+                            , subscriberEventTwitchUserName = twitchEventDetailsBaseUserName
+                            }
+                    (CheerEventType, CheerEventDetails TwitchEventDetailsCheer {..}) ->
+                      runDB $ do
+                        queueId <- insert $ Queue {queueEventKind = NewCheer, queueCompleted = False}
+                        insert_ $ CheerEvent
+                            { cheerEventQueueId = queueId
+                            , cheerEventTwitchUserName = twitchEventDetailsCheerUserName
+                            , cheerEventBits = twitchEventDetailsCheerBits
+                            }
+                    (RaidEventType, RaidEventDetails TwitchEventDetailsRaid {..}) ->
+                      runDB $ do
+                        queueId <- insert $ Queue {queueEventKind = NewRaid, queueCompleted = False}
+                        insert_ $ RaidEvent
+                            { raidEventQueueId = queueId
+                            , raidEventTwitchUserName = twitchEventDetailsRaidFromBroadcasterUserName
+                            , raidEventViewers = twitchEventDetailsRaidViewers
+                            }
+                    _ -> sendStatusJSON status401 $ "Event " <> tshow twitchSubscriptionType <> " is not implemented"
           Just _ -> sendStatusJSON status401 ("Unrecognized event type" :: Text)
           Nothing -> sendStatusJSON status401 ("Unable to find event type header" :: Text)
       else

@@ -6,14 +6,6 @@ import AesonUtils
 import Data.Aeson.TH
 import Import.NoFoundation
 
-newtype TwitchCondition =
-  TwitchCondition
-    { twitchConditionBroadcasterUserId :: Text
-    }
-    deriving Show
-
-deriveJSON (jsonDeriveSnakeCaseDropPrefix "TwitchCondition") ''TwitchCondition
-
 data TwitchTransport =
   TwitchTransport
     { twitchTransportMethod   :: Text
@@ -24,33 +16,27 @@ data TwitchTransport =
 deriveJSON (jsonDeriveSnakeCaseDropPrefix "TwitchTransport") ''TwitchTransport
 
 data TwitchEventType
-  = FollowEvent
-  | SubscribeEvent
-  | GiftedSubscribeEvent
-  | CheerEvent
-  | RaidEvent
-  | UserAuthorizationGrantEvent
+  = FollowEventType
+  | SubscribeEventType
+  | CheerEventType
+  | RaidEventType
   deriving Show
 
 instance FromJSON TwitchEventType where
   parseJSON (String s) = case s of
-                           "channel.follow" -> pure FollowEvent
-                           "channel.subscribe" -> pure SubscribeEvent
-                           "channel.subscription.gift" -> pure GiftedSubscribeEvent
-                           "channel.cheer" -> pure CheerEvent
-                           "channel.raid" -> pure RaidEvent
-                           "user.authorization.grant" -> pure UserAuthorizationGrantEvent
-                           _ -> mzero
+                           "channel.follow"    -> pure FollowEventType
+                           "channel.subscribe" -> pure SubscribeEventType
+                           "channel.cheer"     -> pure CheerEventType
+                           "channel.raid"      -> pure RaidEventType
+                           _                   -> mzero
   parseJSON _ = mzero
 
 instance ToJSON TwitchEventType where
   toJSON = \case
-    FollowEvent                 -> "channel.follow"
-    SubscribeEvent              -> "channel.subscribe"
-    GiftedSubscribeEvent        -> "channel.subscription.gift"
-    CheerEvent                  -> "channel.cheer"
-    RaidEvent                   -> "channel.raid"
-    UserAuthorizationGrantEvent -> "user.authorization.grant"
+    FollowEventType    -> "channel.follow"
+    SubscribeEventType -> "channel.subscribe"
+    CheerEventType     -> "channel.cheer"
+    RaidEventType      -> "channel.raid"
 
 data TwitchSubscription =
   TwitchSubscription
@@ -59,7 +45,8 @@ data TwitchSubscription =
     , twitchSubscriptionType      :: TwitchEventType
     , twitchSubscriptionVersion   :: Text
     , twitchSubscriptionCost      :: Int
-    , twitchSubscriptionCondition :: TwitchCondition
+    , -- Note: raids use 'to_broadcaster_user_id', others use 'broadcaster_user_id'
+      twitchSubscriptionCondition :: Value
     , twitchSubscriptionTransport :: TwitchTransport
     , twitchSubscriptionCreatedAt :: Text
     }
@@ -67,18 +54,68 @@ data TwitchSubscription =
 
 deriveJSON (jsonDeriveSnakeCaseDropPrefix "TwitchSubscription") ''TwitchSubscription
 
-data TwitchEventDetails =
-  TwitchEventDetails
-    { twitchEventDetailsUserId               :: Text
-    , twitchEventDetailsUserLogin            :: Text
-    , twitchEventDetailsUserName             :: Text
-    , twitchEventDetailsBroadcasterUserId    :: Text
-    , twitchEventDetailsBroadcasterUserLogin :: Text
-    , twitchEventDetailsBroadcasterUserName  :: Text
+data TwitchEventDetailsBase =
+  TwitchEventDetailsBase
+    { twitchEventDetailsBaseUserId               :: Text
+    , twitchEventDetailsBaseUserLogin            :: Text
+    , twitchEventDetailsBaseUserName             :: Text
+    , twitchEventDetailsBaseBroadcasterUserId    :: Text
+    , twitchEventDetailsBaseBroadcasterUserLogin :: Text
+    , twitchEventDetailsBaseBroadcasterUserName  :: Text
     }
     deriving Show
 
-deriveJSON (jsonDeriveSnakeCaseDropPrefix "TwitchEventDetails") ''TwitchEventDetails
+deriveJSON (jsonDeriveSnakeCaseDropPrefix "TwitchEventDetailsBase") ''TwitchEventDetailsBase
+
+data TwitchEventDetailsCheer =
+  TwitchEventDetailsCheer
+    { twitchEventDetailsCheerUserId               :: Text
+    , twitchEventDetailsCheerUserLogin            :: Text
+    , twitchEventDetailsCheerUserName             :: Text
+    , twitchEventDetailsCheerBroadcasterUserId    :: Text
+    , twitchEventDetailsCheerBroadcasterUserLogin :: Text
+    , twitchEventDetailsCheerBroadcasterUserName  :: Text
+    , twitchEventDetailsCheerIsAnonymous          :: Bool
+    , twitchEventDetailsCheerMessage              :: Text
+    , twitchEventDetailsCheerBits                 :: Int
+    }
+    deriving Show
+
+deriveJSON (jsonDeriveSnakeCaseDropPrefix "TwitchEventDetailsCheer") ''TwitchEventDetailsCheer
+
+data TwitchEventDetailsRaid =
+  TwitchEventDetailsRaid
+    { twitchEventDetailsRaidToBroadcasterUserId      :: Text
+    , twitchEventDetailsRaidToBroadcasterUserLogin   :: Text
+    , twitchEventDetailsRaidToBroadcasterUserName    :: Text
+    , twitchEventDetailsRaidFromBroadcasterUserId    :: Text
+    , twitchEventDetailsRaidFromBroadcasterUserLogin :: Text
+    , twitchEventDetailsRaidFromBroadcasterUserName  :: Text
+    , twitchEventDetailsRaidViewers                  :: Int
+    }
+    deriving Show
+
+deriveJSON (jsonDeriveSnakeCaseDropPrefix "TwitchEventDetailsRaid") ''TwitchEventDetailsRaid
+
+data TwitchEventDetailsUserLogin =
+  TwitchEventDetailsUserLogin
+    { twitchEventDetailsUserLoginClientId  :: Text
+    , twitchEventDetailsUserLoginUserId    :: Text
+    , twitchEventDetailsUserLoginUserLogin :: Text
+    , twitchEventDetailsUserLoginUserName  :: Text
+    }
+    deriving Show
+
+deriveJSON (jsonDeriveSnakeCaseDropPrefix "TwitchEventDetailsUserLogin") ''TwitchEventDetailsUserLogin
+
+data TwitchEventDetails
+  = RaidEventDetails TwitchEventDetailsRaid
+  | CheerEventDetails TwitchEventDetailsCheer
+  | BaseEventDetails TwitchEventDetailsBase
+  | UserLoginEventDetails TwitchEventDetailsUserLogin
+  deriving Show
+
+deriveJSON (defaultOptions {sumEncoding = UntaggedValue}) ''TwitchEventDetails
 
 data TwitchEvent =
   TwitchEvent
