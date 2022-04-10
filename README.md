@@ -17,14 +17,10 @@ early work in progress.
 Next steps
 ---
 
-- Subscribe to streamer's follows, subscriptions, and bits webhooks
-  - Start here: https://dev.twitch.tv/docs/eventsub/handling-webhook-events
-  - Test locally using the twitch CLI: [twitch-cli][twitch-cli]
-  - Validating HMAC signature: [Crypto.Mac.HMAC][crypto-hmac]
-    - https://dev.twitch.tv/docs/eventsub/handling-webhook-events#verifying-the-event-message
-- Save follows, subscriptions, and bits as events in the database
-- Event source handler should read events and push them
-- Store the twitch username along with the identity
+1. Store the twitch username along with the identity
+2. Bring in animatorium code into overlay.julius and ensure follow, raid, cheer, subscribe display as text to overlay
+3. Subscribe to raid, cheer, follow, and subscribe events on overlay start up
+4. Deploy the container to heroku and start testing live events
 
 [twitch-cli]: https://dev.twitch.tv/docs/eventsub/handling-webhook-events#using-the-cli-to-test-your-handler
 [crypto-hmac]: https://hackage.haskell.org/package/cryptonite-0.30/docs/Crypto-MAC-HMAC.html
