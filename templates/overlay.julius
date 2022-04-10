@@ -30,17 +30,6 @@ sse.addEventListener("update", function(e) {
   console.log("update: " + e.data)
 })
 
-var dx = 10
-
 sse.addEventListener("message", function(e) {
   console.log("message: " + e.data)
-  console.log("dx: " + dx)
-  var message = draw.text(e.data).fill('#975df9').dx(dx)
-  dx = dx + 10
-  message.font(
-    {
-      family:   'Helvetica',
-      size:     32,
-    }
-  )
 })
