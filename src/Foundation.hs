@@ -314,7 +314,7 @@ instance YesodAuth App where
     , oauth2TwitchScoped
         "Login via Twitch as streamer (this is not you)"
         "twitch-streamer"
-        ["user:read:email", "channel:read:subscriptions"]
+        ["user:read:email", "channel:read:subscriptions", "bits:read"]
         twitchSettingsClientId
         twitchSettingsClientSecret
     ]

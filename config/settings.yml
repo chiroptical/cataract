@@ -44,3 +44,4 @@ twitch:
   client-id:      "_env:TWITCH_CLIENT_ID:twitch"
   client-secret:  "_env:TWITCH_CLIENT_SECRET:twitch"
   streamer-id:    "_env:TWITCH_STREAMER_ID:'1234'"
+  callback:       "_env:TWITCH_CALLBACK:'http://localhost:3000/twitch/webhooks'"

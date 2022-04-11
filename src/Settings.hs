@@ -95,6 +95,7 @@ data TwitchSettings = TwitchSettings
   { twitchSettingsClientId     :: Text
   , twitchSettingsClientSecret :: Text
   , twitchSettingsStreamerId   :: Text
+  , twitchSettingsCallback     :: Text
   }
 
 instance FromJSON TwitchSettings where
@@ -102,6 +103,7 @@ instance FromJSON TwitchSettings where
     twitchSettingsClientId <- o .: "client-id"
     twitchSettingsClientSecret <- o .: "client-secret"
     twitchSettingsStreamerId <- o .: "streamer-id"
+    twitchSettingsCallback <- o .: "callback"
     pure TwitchSettings {..}
 
 {- | Settings for 'widgetFile', such as which template languages to support and

@@ -35,6 +35,10 @@ emptyLayout w = do
 getOverlayR :: Handler Html
 getOverlayR = do
   TwitchSettings {..} <- appTwitchSettings <$> getsYesod appSettings
+
+  -- Subscribe to webhooks
+
+  -- Initialize overlay content
   mTwitchCredentials <- runDB . Db.selectOne $ queryCredentialsFromIdent twitchSettingsStreamerId
   (followerCount, subscriberCount) :: (Text, Text) <-
     case mTwitchCredentials of

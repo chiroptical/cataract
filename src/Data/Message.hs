@@ -22,7 +22,7 @@ newtype SubscribeMessage =
 instance ToJSON SubscribeMessage where
   toJSON SubscribeMessage {..} =
     object
-     [ "kind" .= ("subscribe" :: Text)
+     [ "kind" .= ("subscription" :: Text)
      , "from" .= subscribeMessageTwitchUserName
      ]
 

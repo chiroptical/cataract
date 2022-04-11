@@ -35,6 +35,7 @@ library
       Request.Twitch.Followers
       Request.Twitch.Sql
       Request.Twitch.Subscribers
+      Request.Twitch.SubscribeToEvent
       Settings
       Settings.StaticFiles
       Yesod.Auth.OAuth2.MyTwitch
