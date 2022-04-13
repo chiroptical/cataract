@@ -8,6 +8,7 @@ in
       bash
       coreutils
       curl
+      cacert
     ];
     runAsRoot = let
       getFileName = fileName: with pkgs.lib; last (splitString "/" fileName);
