@@ -265,7 +265,8 @@ instance YesodAuth App where
   authenticate Creds {..} = do
     TwitchSettings {..} <- appTwitchSettings <$> getsYesod appSettings
     liftHandler . runDB $ do
-      -- TODO: Ensure that users log in with the correct scopes!
+      -- Determine if user already exists in the database and build the
+      -- 'TwitchCredentials' record if possible
       mTwitchUserIdent <- getBy $ UniqueTwitchUser credsIdent
       let credsExtraMap = Map.fromList credsExtra
           mUserResponseBS :: Maybe LBS.ByteString
@@ -278,8 +279,7 @@ instance YesodAuth App where
                           <*> Map.lookup "refreshToken" credsExtraMap
                           <*> pure twitchUserId
 
-      -- TODO: Need to test this with some other user
-      -- TODO: Can we clean this logic up at all?
+      -- Determine if any non-streamer user has requested more than the 'user:read:email' scope
       case mUserResponse of
         Nothing -> pure $ ServerError "Unable to decode user response from Twitch"
         Just UserResponse {..} -> do
@@ -287,31 +287,47 @@ instance YesodAuth App where
              then pure . UserError $ IdentifierNotFound "Log in as user"
              else
                 case mTwitchUserIdent of
+                    -- If the user exists,
+                    -- - update the Twitch login name
+                    -- - update the Twitch credentials
                     Just (Entity uid _) -> do
-                      forM_ (mkTwitchCredentials uid) $ \tc@TwitchCredentials {..} ->
+                      let mTwitchUserLogin = Map.lookup "login" credsExtraMap
+                      forM_ (mkTwitchCredentials uid) $ \tc@TwitchCredentials {..} -> do
+                        case mTwitchUserLogin of
+                          Nothing -> pure ()
+                          Just twitchUserLogin -> void $ updateGet uid [ TwitchUserLogin =. twitchUserLogin ]
                         void $ upsert tc
                           [ TwitchCredentialsAccessToken =. twitchCredentialsAccessToken
                           , TwitchCredentialsRefreshToken =. twitchCredentialsRefreshToken
                           ]
                       pure $ Authenticated uid
+                    -- If the user doesn't exist,
+                    -- - insert the 'TwitchUser' entity
+                    -- - insert the 'TwitchCredential' entity
                     Nothing -> do
-                      twitchUserId <- insert
-                          TwitchUser
-                            { twitchUserIdent = credsIdent
-                            }
-                      forM_ (mkTwitchCredentials twitchUserId) insert_
-                      pure $ Authenticated twitchUserId
+                      let mTwitchUserLogin = Map.lookup "login" credsExtraMap
+                      case mTwitchUserLogin of
+                        Nothing -> pure $ ServerError "Unable to determine Twitch login handle"
+                        Just twitchUserLogin -> do
+                          twitchUserId <- insert
+                              TwitchUser
+                                { twitchUserIdent = credsIdent
+                                , twitchUserLogin = twitchUserLogin
+                                }
+                          forM_ (mkTwitchCredentials twitchUserId) insert_
+                          pure $ Authenticated twitchUserId
 
   -- You can add other plugins like Google Email, email or OAuth here
   authPlugins :: App -> [AuthPlugin App]
   authPlugins app =
+    -- TODO: Build out our API before allowing users to log in
+    -- [ oauth2TwitchScoped
+    --     "Login with Twitch as user (this is you)"
+    --     "twitch-user"
+    --     ["user:read:email"]
+    --     twitchSettingsClientId
+    --     twitchSettingsClientSecret
     [ oauth2TwitchScoped
-        "Login with Twitch as user (this is you)"
-        "twitch-user"
-        ["user:read:email"]
-        twitchSettingsClientId
-        twitchSettingsClientSecret
-    , oauth2TwitchScoped
         "Login via Twitch as streamer (this is not you)"
         "twitch-streamer"
         ["user:read:email", "channel:read:subscriptions", "bits:read"]

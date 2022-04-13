@@ -4,6 +4,7 @@
 TwitchUser sql=twitch_users
   ident Text
   UniqueTwitchUser ident
+  login Text
   deriving Typeable
 
 TwitchCredentials

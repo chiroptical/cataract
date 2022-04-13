@@ -14,13 +14,14 @@ communities. Ideally, getting viewers involved when possible.
 This application is coded using Haskell, Yesod, and Persistent. The project is
 early work in progress.
 
-Next steps
+Before Deploy to MVP
 ---
 
-1. Store the twitch username along with the identity
-2. Bring in animatorium code into overlay.julius and ensure follow, raid, cheer, subscribe display as text to overlay
-3. Subscribe to raid, cheer, follow, and subscribe events on overlay start up
-4. Deploy the container to heroku and start testing live events
+- [x] Store the twitch username along with the identity
+- [x] Remove logging in for anyone but the streamer
+  - We don't currently support an API that requires non-streamer to login
+- [x] Subscribe to raid, cheer, follow, and subscribe events on overlay start up
+- [ ] Deploy the container to heroku and start testing live events
 
 [twitch-cli]: https://dev.twitch.tv/docs/eventsub/handling-webhook-events#using-the-cli-to-test-your-handler
 [crypto-hmac]: https://hackage.haskell.org/package/cryptonite-0.30/docs/Crypto-MAC-HMAC.html

@@ -1,13 +1,16 @@
+{-# LANGUAGE NamedFieldPuns      #-}
 {-# LANGUAGE QuasiQuotes         #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 {-# LANGUAGE TemplateHaskell     #-}
 module Handler.Overlay where
 
+import Data.Twitch.Webhook
 import Database.Esqueleto.Experimental qualified as Db
 import Import
 import Request.Twitch                  (twitchRequest)
 import Request.Twitch.Followers
 import Request.Twitch.Sql              (queryCredentialsFromIdent)
+import Request.Twitch.SubscribeToEvent
 import Request.Twitch.Subscribers
 
 emptyLayout :: Yesod site => WidgetFor site () -> HandlerFor site Html
@@ -34,23 +37,43 @@ emptyLayout w = do
 -- - Set up the EventSource handler in JS and start sending messages
 getOverlayR :: Handler Html
 getOverlayR = do
-  TwitchSettings {..} <- appTwitchSettings <$> getsYesod appSettings
+  AppSettings {appDevelopment, appTwitchSettings} <- getsYesod appSettings
+  let TwitchSettings {..} = appTwitchSettings
 
-  -- Subscribe to webhooks
-
-  -- Initialize overlay content
+  -- The overlay is powered by streamer's Twitch credentials
+  -- If they aren't present we can't display anything
   mTwitchCredentials <- runDB . Db.selectOne $ queryCredentialsFromIdent twitchSettingsStreamerId
-  (followerCount, subscriberCount) :: (Text, Text) <-
-    case mTwitchCredentials of
-      Nothing -> pure ("Subscriber credentials", "are missing")
-      Just (Entity _ creds) -> do
-        let followersRequest = Followers twitchSettingsStreamerId
-        eFollowerResponse <- twitchRequest followersRequest twitchSettingsClientId creds FollowersPayload
-        let subscriberRequest = Subscribers twitchSettingsStreamerId
-        eSubscriberResponse <- twitchRequest subscriberRequest twitchSettingsClientId creds SubscribersPayload
-        case (eFollowerResponse, eSubscriberResponse) of
-          (Right (FollowersResponse x), Right (SubscribersResponse y)) -> pure (tshow x, tshow y)
-          _ -> pure ("No response", "from Twitch")
+  Entity _ creds <- maybe
+        (sendStatusJSON status401 ("streamer must log in" :: Text))
+        pure
+        mTwitchCredentials
+
+  -- Subscribe to webhooks for streamer, unless we are in the development
+  -- environment where we don't have SSL termination
+  unless appDevelopment $ do
+    let buildEventRequest =
+          twitchRequest SubscribeToEvent twitchSettingsClientId creds
+            . buildSubscribeToEventPayload appTwitchSettings
+    eFollowEventResponse <- buildEventRequest FollowEventType
+    eSubscribeEventResponse <- buildEventRequest SubscribeEventType
+    eCheerEventResponse <- buildEventRequest CheerEventType
+    eRaidEventResponse <- buildEventRequest RaidEventType
+    case (eFollowEventResponse, eSubscribeEventResponse, eCheerEventResponse, eRaidEventResponse) of
+      (Left _, _, _, _) -> sendStatusJSON status401 ("Unable to subscribe to follow event" :: Text)
+      (_, Left _, _, _) -> sendStatusJSON status401 ("Unable to subscribe to subscribe event" :: Text)
+      (_, _, Left _, _) -> sendStatusJSON status401 ("Unable to subscribe to cheer event" :: Text)
+      (_, _, _, Left _) -> sendStatusJSON status401 ("Unable to subscribe to raid event" :: Text)
+      _ -> pure ()
+
+  -- Get the follower and subscriber count for the initial overlay content
+  (followerCount, subscriberCount) :: (Text, Text) <- do
+    let followersRequest = Followers twitchSettingsStreamerId
+    eFollowerResponse <- twitchRequest followersRequest twitchSettingsClientId creds FollowersPayload
+    let subscriberRequest = Subscribers twitchSettingsStreamerId
+    eSubscriberResponse <- twitchRequest subscriberRequest twitchSettingsClientId creds SubscribersPayload
+    case (eFollowerResponse, eSubscriberResponse) of
+      (Right (FollowersResponse x), Right (SubscribersResponse y)) -> pure (tshow x, tshow y)
+      _ -> pure ("No response", "from Twitch")
   emptyLayout $ do
     setTitle "Overlay"
     $(widgetFile "overlay")

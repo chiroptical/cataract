@@ -10,6 +10,7 @@ module Request.Twitch.SubscribeToEvent where
 import AesonUtils
 import Data.Aeson
 import Data.Aeson.TH
+import Data.Twitch.Webhook
 import Import.NoFoundation hiding (POST)
 import Request.Twitch
 
@@ -47,7 +48,7 @@ deriveJSON (jsonDeriveSnakeCaseDropPrefix "Transport") ''Transport
 
 data SubscribeToEventPayload =
   SubscribeToEventPayload
-    { subscribeToEventPayloadType      :: Text
+    { subscribeToEventPayloadType      :: TwitchEventType
     , subscribeToEventPayloadVersion   :: Text
     , subscribeToEventPayloadCondition :: Condition
     , subscribeToEventPayloadTransport :: Transport
@@ -58,6 +59,8 @@ deriveJSON (jsonDeriveSnakeCaseDropPrefix "SubscribeToEventPayload") ''Subscribe
 
 data SubscribeToEventResponse = SubscribeToEventResponse
 
+deriveJSON defaultOptions ''SubscribeToEventResponse
+
 data SubscribeToEvent = SubscribeToEvent
 
 instance TwitchRequest SubscribeToEvent where
@@ -66,3 +69,17 @@ instance TwitchRequest SubscribeToEvent where
   twitchRequestMethod = POST
   twitchRequestPath = "eventsub/subscriptions"
   twitchQueryParams _ = []
+
+buildSubscribeToEventPayload :: TwitchSettings -> TwitchEventType -> SubscribeToEventPayload
+buildSubscribeToEventPayload TwitchSettings {..} twitchEvType =
+  SubscribeToEventPayload
+    { subscribeToEventPayloadType      = twitchEvType
+    , subscribeToEventPayloadVersion   = "1"
+    , subscribeToEventPayloadCondition = case twitchEvType of
+                                           RaidEventType -> RaidC $ RaidCondition twitchSettingsStreamerId
+                                           _ -> BaseC $ BaseCondition twitchSettingsStreamerId
+    , subscribeToEventPayloadTransport = Transport
+      { transportMethod   = "webhook"
+      , transportCallback = twitchSettingsCallback
+      }
+    }
