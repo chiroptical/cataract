@@ -11,6 +11,9 @@ docker-build:
 	nix build .#docker
 	docker load -i result
 
+deploy:
+	bash script/deploy.sh
+
 docker-run:
 	docker images
 	echo 'docker run --network host pluto:latest-tag'
@@ -37,4 +40,4 @@ repl: ghci
 ghci: hpack
 	cabal repl
 
-.PHONY: build hpack run docker-build docker-run format-nix format-haskell format ghcid clean hlint repl ghci
+.PHONY: build hpack run docker-build deploy docker-run format-nix format-haskell format ghcid clean hlint repl ghci
