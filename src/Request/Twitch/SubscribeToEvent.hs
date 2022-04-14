@@ -41,6 +41,7 @@ data Transport =
   Transport
     { transportMethod   :: Text
     , transportCallback :: Text
+    , transportSecret   :: Text
     }
     deriving Show
 
@@ -81,5 +82,6 @@ buildSubscribeToEventPayload TwitchSettings {..} twitchEvType =
     , subscribeToEventPayloadTransport = Transport
       { transportMethod   = "webhook"
       , transportCallback = twitchSettingsCallback
+      , transportSecret = twitchSettingsClientSecret
       }
     }
