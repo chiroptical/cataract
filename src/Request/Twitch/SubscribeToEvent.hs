@@ -58,6 +58,10 @@ data SubscribeToEventPayload =
 
 deriveJSON (jsonDeriveSnakeCaseDropPrefix "SubscribeToEventPayload") ''SubscribeToEventPayload
 
+-- TODO: JSONError "Error in $: When parsing the constructor
+-- SubscribeToEventResponse of type
+-- Request.Twitch.SubscribeToEvent.SubscribeToEventResponse expected Array but
+-- got Object."
 data SubscribeToEventResponse = SubscribeToEventResponse
 
 deriveJSON defaultOptions ''SubscribeToEventResponse

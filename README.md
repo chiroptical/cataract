@@ -17,8 +17,7 @@ early work in progress.
 Next Steps
 ---
 
-- Deploy the container to heroku and start testing live events
-  - Failed with invalid ca-certificates, install cacert into docker image and redeploy
+- Fix decoding error: L65 in src/Request/Twitch/SubscribeToEvent.hs
 
 [twitch-cli]: https://dev.twitch.tv/docs/eventsub/handling-webhook-events#using-the-cli-to-test-your-handler
 [crypto-hmac]: https://hackage.haskell.org/package/cryptonite-0.30/docs/Crypto-MAC-HMAC.html
