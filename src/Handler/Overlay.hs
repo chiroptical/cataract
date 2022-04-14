@@ -7,7 +7,9 @@ module Handler.Overlay where
 import Data.Twitch.Webhook
 import Database.Esqueleto.Experimental qualified as Db
 import Import
-import Request.Twitch                  (twitchRequest)
+import Request.Twitch                  (AccessToken (..), TwitchRequest (..),
+                                        twitchRequest)
+import Request.Twitch.AppAccess
 import Request.Twitch.Followers
 import Request.Twitch.Sql              (queryCredentialsFromIdent)
 import Request.Twitch.SubscribeToEvent
@@ -43,34 +45,43 @@ getOverlayR = do
   -- The overlay is powered by streamer's Twitch credentials
   -- If they aren't present we can't display anything
   mTwitchCredentials <- runDB . Db.selectOne $ queryCredentialsFromIdent twitchSettingsStreamerId
-  Entity _ creds <- maybe
+  Entity _ TwitchCredentials {..} <- maybe
         (sendStatusJSON status401 ("streamer must log in" :: Text))
         pure
         mTwitchCredentials
+  let accessToken = AccessToken twitchCredentialsAccessToken
 
   -- Subscribe to webhooks for streamer, unless we are in the development
   -- environment where we don't have SSL termination
   unless appDevelopment $ do
-    let buildEventRequest =
-          twitchRequest SubscribeToEvent twitchSettingsClientId creds
-            . buildSubscribeToEventPayload appTwitchSettings
-    eFollowEventResponse <- buildEventRequest FollowEventType
-    eSubscribeEventResponse <- buildEventRequest SubscribeEventType
-    eCheerEventResponse <- buildEventRequest CheerEventType
-    eRaidEventResponse <- buildEventRequest RaidEventType
-    case (eFollowEventResponse, eSubscribeEventResponse, eCheerEventResponse, eRaidEventResponse) of
-      (Left _, _, _, _) -> sendStatusJSON status401 ("Unable to subscribe to follow event" :: Text)
-      (_, Left _, _, _) -> sendStatusJSON status401 ("Unable to subscribe to subscribe event" :: Text)
-      (_, _, Left _, _) -> sendStatusJSON status401 ("Unable to subscribe to cheer event" :: Text)
-      (_, _, _, Left _) -> sendStatusJSON status401 ("Unable to subscribe to raid event" :: Text)
-      _ -> pure ()
+    eAppAccessResponse <-
+      -- TODO: Probably should separate out this request in Twitch
+      twitchRequestNoCreds
+        (AppAccess twitchSettingsClientId twitchSettingsClientSecret)
+        AppAccessPayload
+    case eAppAccessResponse of
+      Left _ -> sendStatusJSON status401 ("Unable to subscribe to follow event" :: Text)
+      Right AppAccessResponse {..} -> do
+        let buildEventRequest =
+              twitchRequest SubscribeToEvent twitchSettingsClientId (AccessToken appAccessAccessToken)
+                . buildSubscribeToEventPayload appTwitchSettings
+        eFollowEventResponse <- buildEventRequest FollowEventType
+        eSubscribeEventResponse <- buildEventRequest SubscribeEventType
+        eCheerEventResponse <- buildEventRequest CheerEventType
+        eRaidEventResponse <- buildEventRequest RaidEventType
+        case (eFollowEventResponse, eSubscribeEventResponse, eCheerEventResponse, eRaidEventResponse) of
+          (Left _, _, _, _) -> sendStatusJSON status401 ("Unable to subscribe to follow event" :: Text)
+          (_, Left _, _, _) -> sendStatusJSON status401 ("Unable to subscribe to subscribe event" :: Text)
+          (_, _, Left _, _) -> sendStatusJSON status401 ("Unable to subscribe to cheer event" :: Text)
+          (_, _, _, Left _) -> sendStatusJSON status401 ("Unable to subscribe to raid event" :: Text)
+          _ -> pure ()
 
   -- Get the follower and subscriber count for the initial overlay content
   (followerCount, subscriberCount) :: (Text, Text) <- do
     let followersRequest = Followers twitchSettingsStreamerId
-    eFollowerResponse <- twitchRequest followersRequest twitchSettingsClientId creds FollowersPayload
+    eFollowerResponse <- twitchRequest followersRequest twitchSettingsClientId accessToken FollowersPayload
     let subscriberRequest = Subscribers twitchSettingsStreamerId
-    eSubscriberResponse <- twitchRequest subscriberRequest twitchSettingsClientId creds SubscribersPayload
+    eSubscriberResponse <- twitchRequest subscriberRequest twitchSettingsClientId accessToken SubscribersPayload
     case (eFollowerResponse, eSubscriberResponse) of
       (Right (FollowersResponse x), Right (SubscribersResponse y)) -> pure (tshow x, tshow y)
       _ -> pure ("No response", "from Twitch")

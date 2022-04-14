@@ -11,9 +11,9 @@ getSubscribersR = do
   eTwitchCredentials <- getTwitchCredentials
   case eTwitchCredentials of
     Left e -> sendStatusJSON status401 e
-    Right creds -> do
+    Right TwitchCredentials {..} -> do
       let subscriberRequest = Subscribers twitchSettingsStreamerId
-      eResponse <- twitchRequest subscriberRequest twitchSettingsClientId creds SubscribersPayload
+      eResponse <- twitchRequest subscriberRequest twitchSettingsClientId (AccessToken twitchCredentialsAccessToken) SubscribersPayload
       case eResponse of
         -- TODO: Probably should just send exceptions directly to the client?
         Left e                         -> sendStatusJSON status500 e
