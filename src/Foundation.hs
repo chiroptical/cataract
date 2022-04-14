@@ -86,6 +86,13 @@ instance Yesod App where
       Nothing   -> getApprootText guessApproot app req
       Just root -> root
 
+  errorHandler :: ErrorResponse -> Handler TypedContent
+  errorHandler = \case
+    InternalError e -> do
+      $logErrorS "yesod-core" e
+      selectRep . provideRep $ pure ("Internal Server Error" :: Text)
+    e -> defaultErrorHandler e
+
   -- Store session data on the client in encrypted cookies,
   -- default session idle timeout is 120 minutes
   makeSessionBackend :: App -> IO (Maybe SessionBackend)
