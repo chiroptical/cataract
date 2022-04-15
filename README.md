@@ -17,7 +17,7 @@ early work in progress.
 Next Steps
 ---
 
-- Fix decoding error: L65 in src/Request/Twitch/SubscribeToEvent.hs
+- Send ping event from /sse if nothing else to do
 
 [twitch-cli]: https://dev.twitch.tv/docs/eventsub/handling-webhook-events#using-the-cli-to-test-your-handler
 [crypto-hmac]: https://hackage.haskell.org/package/cryptonite-0.30/docs/Crypto-MAC-HMAC.html
