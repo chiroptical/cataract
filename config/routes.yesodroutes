@@ -18,3 +18,5 @@
 /twitch/webhooks TwitchWebhookR POST
 
 /sse ServerSentEventsR GET
+
+/admin/webhook/subscribe AdminWebhookSubscribeR GET

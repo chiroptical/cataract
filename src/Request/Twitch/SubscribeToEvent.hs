@@ -11,6 +11,7 @@ import AesonUtils
 import Data.Aeson
 import Data.Aeson.TH
 import Data.Twitch.Webhook
+import Data.UUID
 import Import.NoFoundation hiding (POST)
 import Request.Twitch
 
@@ -58,13 +59,20 @@ data SubscribeToEventPayload =
 
 deriveJSON (jsonDeriveSnakeCaseDropPrefix "SubscribeToEventPayload") ''SubscribeToEventPayload
 
--- TODO: JSONError "Error in $: When parsing the constructor
--- SubscribeToEventResponse of type
--- Request.Twitch.SubscribeToEvent.SubscribeToEventResponse expected Array but
--- got Object."
-data SubscribeToEventResponse = SubscribeToEventResponse
+data SubscribeToEventData =
+  SubscribeToEventData
+    { subscribeToEventDataId   :: UUID
+    , subscribeToEventDataType :: TwitchEventType
+    }
 
-deriveJSON defaultOptions ''SubscribeToEventResponse
+deriveJSON (jsonDeriveSnakeCaseDropPrefix "SubscribeToEventData") ''SubscribeToEventData
+
+newtype SubscribeToEventResponse =
+  SubscribeToEventResponse
+    { subscribeToEventResponseData :: [SubscribeToEventData]
+    }
+
+deriveJSON (jsonDeriveSnakeCaseDropPrefix "SubscribeToEventResponse") ''SubscribeToEventResponse
 
 data SubscribeToEvent = SubscribeToEvent
 

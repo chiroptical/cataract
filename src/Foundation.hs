@@ -181,21 +181,22 @@ instance Yesod App where
     Bool ->
     Handler AuthResult
   -- Routes not requiring authentication.
-  isAuthorized (AuthR _) _         = pure Authorized
-  isAuthorized HomeR _             = pure Authorized
-  isAuthorized OverlayR _          = pure Authorized
-  isAuthorized FaviconR _          = pure Authorized
-  isAuthorized RobotsR _           = pure Authorized
-  isAuthorized (StaticR _) _       = pure Authorized
-  isAuthorized ServerSentEventsR _ = pure Authorized
+  isAuthorized (AuthR _) _              = pure Authorized
+  isAuthorized HomeR _                  = pure Authorized
+  isAuthorized OverlayR _               = pure Authorized
+  isAuthorized FaviconR _               = pure Authorized
+  isAuthorized RobotsR _                = pure Authorized
+  isAuthorized (StaticR _) _            = pure Authorized
+  isAuthorized ServerSentEventsR _      = pure Authorized
   -- See https://dev.twitch.tv/docs/eventsub/handling-webhook-events#verifying-the-event-message
-  isAuthorized TwitchWebhookR _    = pure Authorized
+  isAuthorized TwitchWebhookR _         = pure Authorized
 
   -- the profile route requires that the user is authenticated, so we
   -- delegate to that function
-  isAuthorized ProfileR _          = isAuthenticated
-  isAuthorized FollowersR _        = isAuthenticated
-  isAuthorized SubscribersR _      = isAuthenticated
+  isAuthorized ProfileR _               = isAuthenticated
+  isAuthorized FollowersR _             = isAuthenticated
+  isAuthorized SubscribersR _           = isAuthenticated
+  isAuthorized AdminWebhookSubscribeR _ = isAuthenticatedAdmin
 
   -- This function creates static content files in the static folder
   -- and names them based on a hash of their content. This allows
@@ -351,6 +352,18 @@ isAuthenticated = do
   pure $ case muid of
     Nothing -> Unauthorized "You must login to access this page"
     Just _  -> Authorized
+
+-- | Access function to determine if a user is logged in.
+isAuthenticatedAdmin :: Handler AuthResult
+isAuthenticatedAdmin = do
+  TwitchSettings {..} <- appTwitchSettings <$> getsYesod appSettings
+  mEntity <- maybeAuth
+  pure $ case mEntity of
+    Nothing -> Unauthorized "You must login to access this page"
+    Just (Entity _ TwitchUser {..})  ->
+      if twitchUserIdent == twitchSettingsStreamerId
+          then Authorized
+          else Unauthorized "Only the streamer can use this endpoint"
 
 instance YesodAuthPersist App
 

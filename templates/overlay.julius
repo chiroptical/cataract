@@ -1,7 +1,7 @@
 var draw = SVG('#overlay')
 
-var followerCount = document.getElementById('followerCount').innerHTML
-var subscriberCount = document.getElementById('subscriberCount').innerHTML
+const followerCount = document.getElementById('followerCount').innerHTML
+const subscriberCount = document.getElementById('subscriberCount').innerHTML
 
 // Main layout
 draw

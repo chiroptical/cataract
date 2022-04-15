@@ -40,3 +40,8 @@ RaidEvent sql=raid_events
   twitchUserName Text
   viewers Int
   Primary queueId
+
+WebhookSubscription sql=webhook_subscriptions
+  eventId Text
+  type Text
+  Primary eventId

@@ -32,6 +32,7 @@ library
       Import.NoFoundation
       Model
       Request.Twitch
+      Request.Twitch.AppAccess
       Request.Twitch.Followers
       Request.Twitch.Sql
       Request.Twitch.Subscribers
@@ -88,6 +89,7 @@ library
     , text-conversions
     , time
     , unordered-containers
+    , uuid
     , vector
     , wai
     , wai-extra
@@ -157,6 +159,7 @@ executable pluto
     , text-conversions
     , time
     , unordered-containers
+    , uuid
     , vector
     , wai
     , wai-extra
@@ -232,6 +235,7 @@ test-suite pluto-test
     , text-conversions
     , time
     , unordered-containers
+    , uuid
     , vector
     , wai
     , wai-extra

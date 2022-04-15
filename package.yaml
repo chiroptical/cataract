@@ -37,6 +37,7 @@ dependencies:
 - text-conversions
 - time
 - unordered-containers
+- uuid
 - vector
 - wai
 - wai-extra
