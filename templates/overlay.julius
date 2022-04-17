@@ -87,10 +87,19 @@ sse.onopen = function() {
 
 sse.addEventListener("message", function(e) {
   const obj = JSON.parse(e.data)
-  if (obj.kind === "ping") {
-    console.log("pong")
-  } else {
+  if (obj.kind === "follow") {
     console.log(obj.kind)
     textQueue.push(thankYou(obj.kind, obj.from, draw))
+  } else if (obj.kind === "subscription") {
+    console.log(obj.kind)
+    textQueue.push(thankYou(obj.kind, obj.from, draw))
+  } else if (obj.kind === "cheer") {
+    console.log(obj.kind)
+    textQueue.push(thankYou(obj.kind, obj.from, draw))
+  } else if (obj.kind === "raid") {
+    console.log(obj.kind)
+    textQueue.push(thankYou(obj.kind, obj.from, draw))
+  } else if (obj.kind === "ping") {
+    console.log("pong")
   }
 })
