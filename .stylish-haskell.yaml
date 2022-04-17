@@ -323,7 +323,7 @@ steps:
 
       # stylish-haskell can detect redundancy of some language pragmas. If this
       # is set to true, it will remove those redundant pragmas. Default: true.
-      remove_redundant: true
+      remove_redundant: false
 
       # Language prefix to be used for pragma declaration, this allows you to
       # use other options non case-sensitive like "language" or "Language".
