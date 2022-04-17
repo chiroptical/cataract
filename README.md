@@ -17,7 +17,13 @@ early work in progress.
 Next Steps
 ---
 
-- Send ping event from /sse if nothing else to do
+The current `Queue` schema doesn't support replay in a clean way. We need three tables:
+
+- `Queue` with `eventId`, `completed`
+- `Event` with `eventKind`
+- `FollowerEvent` with `eventId` and data
+
+This way, I can always insert another `QueueId` pointing to an existing event
 
 [twitch-cli]: https://dev.twitch.tv/docs/eventsub/handling-webhook-events#using-the-cli-to-test-your-handler
 [crypto-hmac]: https://hackage.haskell.org/package/cryptonite-0.30/docs/Crypto-MAC-HMAC.html
