@@ -17,13 +17,15 @@ early work in progress.
 Next Steps
 ---
 
-The current `Queue` schema doesn't support replay in a clean way. We need three tables:
-
-- `Queue` with `eventId`, `completed`
-- `Event` with `eventKind`
-- `FollowerEvent` with `eventId` and data
-
-This way, I can always insert another `QueueId` pointing to an existing event
+- Pick a new name
+- Tighten security up
+  - [ ] More secure AES key  
+  - [ ] Encrypt Twitch tokens in the database
+  - [ ] Consider cloud flare, e.g. rate limiting on the API
+- Upgrade dynos to non-free versions
+- Deploy to `name`.chiroptical.dev
+- Could we use [reshape][reshape] for migrations?
 
 [twitch-cli]: https://dev.twitch.tv/docs/eventsub/handling-webhook-events#using-the-cli-to-test-your-handler
 [crypto-hmac]: https://hackage.haskell.org/package/cryptonite-0.30/docs/Crypto-MAC-HMAC.html
+[reshape]: https://github.com/fabianlindfors/reshape
