@@ -90,6 +90,7 @@ sse.addEventListener("message", function(e) {
   if (obj.kind === "ping") {
     console.log("pong")
   } else {
+    console.log(obj.kind)
     textQueue.push(thankYou(obj.kind, obj.from, draw))
   }
 })
