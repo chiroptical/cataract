@@ -32,20 +32,22 @@ serverSentEventsGenerator _ s = do
   case events of
     [Entity queueId Queue {..}] -> do
       -- Mark the event as completed, we should have a replay system at some point
-      _ <- runDB . update $ \q -> do
+      void .runDB . update $ \q -> do
         set q [QueueCompleted =. val True]
         where_ $ q ^. #id ==. val queueId
       case queueEventKind of
-        Ping ->
+        Ping -> do
+          liftIO $ putStrLn "Sent ping event from database"
           pure ( [ServerEvent
-              (Just "message")
-              (Just . fromText $ tshow queueId)
-              [fromJSONToBuilder PingMessage]
-            ]
-          , s
-          )
+                (Just "message")
+                (Just . fromText $ tshow queueId)
+                [fromJSONToBuilder PingMessage]
+              ]
+            , s
+            )
         NewFollower -> do
           mFollowerEvent <- runDB $ get (coerce queueId :: FollowerEventId)
+          liftIO $ putStrLn "Sent follower event from database"
           pure $ case mFollowerEvent of
             Nothing -> ([], s)
             Just FollowerEvent {..} ->
@@ -58,6 +60,7 @@ serverSentEventsGenerator _ s = do
               )
         NewSubscriber -> do
           mSubscriberEvent <- runDB $ get (coerce queueId :: SubscriberEventId)
+          liftIO $ putStrLn "Sent subscriber event from database"
           pure $ case mSubscriberEvent of
             Nothing -> ([], s)
             Just SubscriberEvent {..} ->
@@ -70,6 +73,7 @@ serverSentEventsGenerator _ s = do
               )
         NewCheer -> do
           mCheerEvent <- runDB $ get (coerce queueId :: CheerEventId)
+          liftIO $ putStrLn "Sent cheer event from database"
           pure $ case mCheerEvent of
             Nothing -> ([], s)
             Just CheerEvent {..} ->
@@ -82,6 +86,7 @@ serverSentEventsGenerator _ s = do
               )
         NewRaid -> do
           mRaidEvent <- runDB $ get (coerce queueId :: RaidEventId)
+          liftIO $ putStrLn "Sent raid event from database"
           pure $ case mRaidEvent of
             Nothing -> ([], s)
             Just RaidEvent {..} ->
@@ -93,7 +98,9 @@ serverSentEventsGenerator _ s = do
               , s
               )
     -- If there are no events, there is nothing to do
-    _ -> pure ( [ServerEvent
+    _ -> do
+      liftIO $ putStrLn "Send default ping event"
+      pure ( [ServerEvent
               (Just "message")
               (Just . fromText $ tshow (0 :: Int))
               [fromJSONToBuilder PingMessage]
