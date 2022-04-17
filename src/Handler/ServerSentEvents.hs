@@ -98,8 +98,7 @@ serverSentEventsGenerator _ s = do
               , s
               )
     -- If there are no events, there is nothing to do
-    _ -> do
-      liftIO $ putStrLn "Send default ping event"
+    _ ->
       pure ( [ServerEvent
               (Just "message")
               (Just . fromText $ tshow (0 :: Int))
