@@ -108,8 +108,15 @@ serverSentEventsGenerator _ s = do
                       ]
                     , s
                     )
-    -- If there are no events, there is nothing to do
-    _ -> pure ([], s)
+    -- If there are no events, send 0 ping
+    _ ->
+      pure ( [ServerEvent
+            (Just "message")
+            (Just . fromText $ tshow (0 :: Int))
+            [fromJSONToBuilder PingMessage]
+          ]
+        , s
+        )
 
 queryMostRecentIncompleteEvent :: SqlQuery (SqlExpr (Entity Queue))
 queryMostRecentIncompleteEvent = do
