@@ -6,6 +6,7 @@ import Data.Monoid
 import Database.Esqueleto.Experimental (PersistField (..), PersistFieldSql (..),
                                         PersistValue (..), SqlType (..))
 import GHC.Generics
+import Prelude                         (Show)
 
 data Event =
     Ping
@@ -13,7 +14,7 @@ data Event =
   | NewSubscriber
   | NewCheer
   | NewRaid
-  deriving Generic
+  deriving (Generic, Show)
 
 instance ToJSON Event
 

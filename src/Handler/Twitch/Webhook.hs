@@ -1,4 +1,6 @@
-{-# LANGUAGE NamedFieldPuns #-}
+{-# LANGUAGE NamedFieldPuns  #-}
+{-# LANGUAGE TemplateHaskell #-}
+
 module Handler.Twitch.Webhook where
 
 import Crypto.Hash                     (Digest)
@@ -25,6 +27,26 @@ import Request.Twitch.SubscribeToEvent
 
 toBase16 :: HMAC SHA256 -> ByteString
 toBase16 = BA.convertToBase @(Digest SHA256) @ByteString BA.Base16 . hmacGetDigest
+
+postAdminReplayWebhookR :: QueueId -> Handler ()
+postAdminReplayWebhookR queueId = do
+  mQueue <- runDB $ get queueId
+  case mQueue of
+    Nothing -> sendStatusJSON status404 ("Unable to find event" :: Text)
+    Just Queue {..} -> do
+      runDB $
+        insert_
+          Queue { queueEventKind = queueEventKind
+                , queueCompleted = False
+                }
+  redirect AdminWebhooksR
+
+getAdminWebhooksR :: Handler Html
+getAdminWebhooksR = do
+  theQueue <- runDB (selectList @Queue [] [LimitTo 30, Desc QueueId])
+  defaultLayout $ do
+    setTitle "Admin Queue"
+    $(widgetFile "adminWebhooks")
 
 postTwitchWebhookR :: Handler ()
 postTwitchWebhookR = do
@@ -101,8 +123,8 @@ postTwitchWebhookR = do
       else
         sendStatusJSON status401 ("Unable to validate request" :: Text)
 
-getAdminWebhookSubscribeR :: Handler ()
-getAdminWebhookSubscribeR = do
+getAdminWebhooksSubscribeR :: Handler ()
+getAdminWebhooksSubscribeR = do
   AppSettings {appDevelopment, appTwitchSettings} <- getsYesod appSettings
   let TwitchSettings {..} = appTwitchSettings
   -- Subscribe to webhooks for streamer, unless we are in the development

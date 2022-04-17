@@ -19,4 +19,9 @@
 
 /sse ServerSentEventsR GET
 
-/admin/webhook/subscribe AdminWebhookSubscribeR GET
+-- Admin actions
+/admin/webhook/#QueueId AdminReplayWebhookR POST
+
+-- Admin pages
+/admin/webhooks AdminWebhooksR GET
+/admin/webhooks/subscribe AdminWebhooksSubscribeR GET

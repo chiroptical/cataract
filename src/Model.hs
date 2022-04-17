@@ -17,6 +17,7 @@ module Model where
 import ClassyPrelude.Yesod
 import Data.Event
 import Database.Persist.Quasi
+import Text.Blaze             (ToMarkup (..))
 
 -- You can define all of your database entities in the entities file.
 -- You can find more information on persistent and how to declare entities
@@ -25,3 +26,6 @@ import Database.Persist.Quasi
 share
   [mkPersist sqlSettings, mkMigrate "migrateAll"]
   $(persistFileWith lowerCaseSettings "config/models.persistentmodels")
+
+instance ToMarkup QueueId where
+  toMarkup queueId = toMarkup $ toPathPiece queueId
