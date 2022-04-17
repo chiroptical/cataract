@@ -28,20 +28,30 @@ fromJSONToBuilder = fromLazyByteString . encode
 serverSentEventsGenerator :: EventSourcePolyfill -> s -> Handler ([ServerEvent], s)
 serverSentEventsGenerator _ s = do
   liftIO $ threadDelay 1_000_000
-  events <- runDB $ select $ from queryMostRecentIncompleteEvent
-  case events of
-    [Entity queueId Queue {..}] -> do
-      if queueCompleted
-        then
-            pure ( [ServerEvent
-                  (Just "message")
-                  (Just . fromText $ tshow queueId)
-                  [fromJSONToBuilder PingMessage]
-                ]
-              , s
-              )
-        else
-          do
+  (mLeastRecentIncomplete, mMostRecentComplete) <- runDB $ do
+    incomplete <- select $ from queryLeastRecentIncompleteEvent
+    complete <- select $ from queryMostRecentCompletedEvent
+    pure (incomplete, complete)
+  case (mLeastRecentIncomplete, mMostRecentComplete) of
+    -- There are no events
+    ([], []) ->
+      pure ( [ServerEvent
+            (Just "message")
+            (Just . fromText $ tshow (0 :: Int))
+            [fromJSONToBuilder PingMessage]
+          ]
+        , s
+        )
+    -- No events to send, everything is complete
+    ([], [Entity queueId _]) ->
+      pure ( [ServerEvent
+            (Just "message")
+            (Just . fromText $ tshow queueId)
+            [fromJSONToBuilder PingMessage]
+          ]
+        , s
+        )
+    ([Entity queueId Queue {..}], _) -> do
             -- Mark the event as completed, we should have a replay system at some point
             void . runDB . update $ \q -> do
               set q [QueueCompleted =. val True]
@@ -108,7 +118,9 @@ serverSentEventsGenerator _ s = do
                       ]
                     , s
                     )
-    -- If there are no events, send 0 ping
+    -- This is really not possible because of the 'limit 1' clauses in
+    -- 'queryMostRecentCompletedEvent' and 'queryLeastRecentIncompleteEvent'.
+    -- Just making the compiler happy.
     _ ->
       pure ( [ServerEvent
             (Just "message")
@@ -118,9 +130,18 @@ serverSentEventsGenerator _ s = do
         , s
         )
 
-queryMostRecentIncompleteEvent :: SqlQuery (SqlExpr (Entity Queue))
-queryMostRecentIncompleteEvent = do
+queryLeastRecentIncompleteEvent :: SqlQuery (SqlExpr (Entity Queue))
+queryLeastRecentIncompleteEvent = do
   queue <- from $ table @Queue
+  where_ $ queue ^. #completed ==. val False
   orderBy [asc (queue ^. #id)]
+  limit 1
+  pure queue
+
+queryMostRecentCompletedEvent :: SqlQuery (SqlExpr (Entity Queue))
+queryMostRecentCompletedEvent = do
+  queue <- from $ table @Queue
+  where_ $ queue ^. #completed ==. val True
+  orderBy [desc (queue ^. #id)]
   limit 1
   pure queue
