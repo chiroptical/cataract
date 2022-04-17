@@ -15,31 +15,34 @@ TwitchCredentials
   UniqueTwitchUserId twitchUserId
   deriving Show
 
+Event sql=events
+  kind EventKind
+
 Queue
-  eventKind Event
+  eventId EventId
   completed Bool
 
 FollowerEvent sql=follower_events
-  queueId QueueId
+  eventId EventId
   twitchUserName Text
-  Primary queueId
+  Primary eventId
 
 SubscriberEvent sql=subscriber_events
-  queueId QueueId
+  eventId EventId
   twitchUserName Text
-  Primary queueId
+  Primary eventId
 
 CheerEvent sql=cheer_events
-  queueId QueueId
+  eventId EventId
   twitchUserName Text
   bits Int
-  Primary queueId
+  Primary eventId
 
 RaidEvent sql=raid_events
-  queueId QueueId
+  eventId EventId
   twitchUserName Text
   viewers Int
-  Primary queueId
+  Primary eventId
 
 WebhookSubscription sql=webhook_subscriptions
   eventId Text

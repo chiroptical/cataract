@@ -12,9 +12,9 @@ library
   exposed-modules:
       AesonUtils
       Application
-      Data.Event
       Data.Event.Follower
       Data.Event.Subscriber
+      Data.EventKind
       Data.Message
       Data.Twitch
       Data.Twitch.Webhook
@@ -28,6 +28,7 @@ library
       Handler.Twitch.Subscribers
       Handler.Twitch.Utils
       Handler.Twitch.Webhook
+      Handler.Twitch.Webhook.Sql
       Import
       Import.NoFoundation
       Model

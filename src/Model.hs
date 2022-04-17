@@ -15,7 +15,7 @@
 module Model where
 
 import ClassyPrelude.Yesod
-import Data.Event
+import Data.EventKind
 import Database.Persist.Quasi
 import Text.Blaze             (ToMarkup (..))
 
@@ -29,3 +29,6 @@ share
 
 instance ToMarkup QueueId where
   toMarkup queueId = toMarkup $ toPathPiece queueId
+
+instance ToMarkup EventId where
+  toMarkup eventId = toMarkup $ toPathPiece eventId

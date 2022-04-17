@@ -11,16 +11,17 @@ import Data.ByteArray.Encoding         qualified as BA
 import Data.ByteString                 qualified as BS
 import Data.Conduit.List               qualified as CL
 import Data.Conduit.Text               qualified as CT
-import Data.Event                      (Event (..))
+import Data.EventKind                  (EventKind (..))
 import Data.Map                        qualified as Map
 import Data.Text                       qualified as T
 import Data.Text.Encoding              qualified as T
 import Data.Text.Lazy                  qualified as LT
 import Data.Text.Lazy.Encoding         qualified as LT
 import Data.Twitch.Webhook
+import Database.Esqueleto.Experimental (from, select)
+import Handler.Twitch.Webhook.Sql
 import Import                          hiding (requestHeaders)
 import Network.Wai                     (Request (..), responseLBS)
-
 import Request.Twitch
 import Request.Twitch.AppAccess
 import Request.Twitch.SubscribeToEvent
@@ -28,28 +29,22 @@ import Request.Twitch.SubscribeToEvent
 toBase16 :: HMAC SHA256 -> ByteString
 toBase16 = BA.convertToBase @(Digest SHA256) @ByteString BA.Base16 . hmacGetDigest
 
-postAdminReplayWebhookR :: QueueId -> Handler ()
-postAdminReplayWebhookR queueId = do
-  mQueue <- runDB $ get queueId
-  case mQueue of
+postAdminReplayWebhookR :: EventId -> Handler ()
+postAdminReplayWebhookR eventId = do
+  mEvent <- runDB $ get eventId
+  case mEvent of
     Nothing -> sendStatusJSON status404 ("Unable to find event" :: Text)
-    Just Queue {..} ->
-      runDB $ do
-        newQueueId <- insert
-          Queue { queueEventKind = queueEventKind
+    Just Event {} ->
+      runDB $
+        insert_
+          Queue { queueEventId = eventId
                 , queueCompleted = False
                 }
-        case queueEventKind of
-          Ping -> pure ()
-          NewFollower -> updateWhere [FollowerEventQueueId ==. queueId] [FollowerEventQueueId =. newQueueId]
-          NewSubscriber -> updateWhere [SubscriberEventQueueId ==. queueId] [SubscriberEventQueueId =. newQueueId]
-          NewCheer -> updateWhere [CheerEventQueueId ==. queueId] [CheerEventQueueId =. newQueueId]
-          NewRaid -> updateWhere [RaidEventQueueId ==. queueId] [RaidEventQueueId =. newQueueId]
   redirect AdminWebhooksR
 
 getAdminWebhooksR :: Handler Html
 getAdminWebhooksR = do
-  theQueue <- runDB (selectList @Queue [] [LimitTo 30, Desc QueueId])
+  theQueue <- runDB . select . from $ getRecentNEventsOffQueue 30
   defaultLayout $ do
     setTitle "Admin Queue"
     $(widgetFile "adminWebhooks")
@@ -95,34 +90,50 @@ postTwitchWebhookR = do
                   case (twitchSubscriptionType, event) of
                     (FollowEventType, BaseEventDetails TwitchEventDetailsBase {..}) ->
                       runDB $ do
-                        queueId <- insert $ Queue {queueEventKind = NewFollower, queueCompleted = False}
+                        eventId <- insert $ Event {eventKind = NewFollowerKind}
                         insert_ $ FollowerEvent
-                            { followerEventQueueId = queueId
+                            { followerEventEventId = eventId
                             , followerEventTwitchUserName = twitchEventDetailsBaseUserName
                             }
+                        insert_ $ Queue
+                          { queueEventId = eventId
+                          , queueCompleted = False
+                          }
                     (SubscribeEventType, BaseEventDetails TwitchEventDetailsBase {..}) ->
                       runDB $ do
-                        queueId <- insert $ Queue {queueEventKind = NewSubscriber, queueCompleted = False}
+                        eventId <- insert $ Event {eventKind = NewSubscriberKind}
                         insert_ $ SubscriberEvent
-                            { subscriberEventQueueId = queueId
+                            { subscriberEventEventId = eventId
                             , subscriberEventTwitchUserName = twitchEventDetailsBaseUserName
                             }
+                        insert_ $ Queue
+                          { queueEventId = eventId
+                          , queueCompleted = False
+                          }
                     (CheerEventType, CheerEventDetails TwitchEventDetailsCheer {..}) ->
                       runDB $ do
-                        queueId <- insert $ Queue {queueEventKind = NewCheer, queueCompleted = False}
+                        eventId <- insert $ Event {eventKind = NewCheerKind}
                         insert_ $ CheerEvent
-                            { cheerEventQueueId = queueId
+                            { cheerEventEventId = eventId
                             , cheerEventTwitchUserName = twitchEventDetailsCheerUserName
                             , cheerEventBits = twitchEventDetailsCheerBits
                             }
+                        insert_ $ Queue
+                          { queueEventId = eventId
+                          , queueCompleted = False
+                          }
                     (RaidEventType, RaidEventDetails TwitchEventDetailsRaid {..}) ->
                       runDB $ do
-                        queueId <- insert $ Queue {queueEventKind = NewRaid, queueCompleted = False}
+                        eventId <- insert $ Event {eventKind = NewRaidKind}
                         insert_ $ RaidEvent
-                            { raidEventQueueId = queueId
+                            { raidEventEventId = eventId
                             , raidEventTwitchUserName = twitchEventDetailsRaidFromBroadcasterUserName
                             , raidEventViewers = twitchEventDetailsRaidViewers
                             }
+                        insert_ $ Queue
+                          { queueEventId = eventId
+                          , queueCompleted = False
+                          }
                     _ -> sendStatusJSON status401 $ "Event " <> tshow twitchSubscriptionType <> " is not implemented"
           Just _ -> sendStatusJSON status401 ("Unrecognized event type" :: Text)
           Nothing -> sendStatusJSON status401 ("Unable to find event type header" :: Text)

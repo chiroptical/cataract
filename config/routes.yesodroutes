@@ -20,7 +20,7 @@
 /sse ServerSentEventsR GET
 
 -- Admin actions
-/admin/webhook/#QueueId AdminReplayWebhookR POST
+/admin/webhook/#EventId AdminReplayWebhookR POST
 
 -- Admin pages
 /admin/webhooks AdminWebhooksR GET

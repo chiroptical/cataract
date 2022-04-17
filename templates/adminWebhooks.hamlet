@@ -1,8 +1,8 @@
 <div>
   <ul>
-    $forall Entity queueId (Queue eventKind completed) <- theQueue
-      <li>Event is #{show eventKind}, completed: #{completed}
+    $forall (Entity queueId (Queue _ completed), Entity eventId (Event eventKind)) <- theQueue
+      <li>Queue position #{queueId}, type is #{show eventKind}, completed #{completed}
       $if completed
-        <form action="/admin/webhook/#{queueId}" method="POST">
+        <form action="/admin/webhook/#{eventId}" method="POST">
           <button>
             Replay
