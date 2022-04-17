@@ -123,50 +123,44 @@ postTwitchWebhookR = do
       else
         sendStatusJSON status401 ("Unable to validate request" :: Text)
 
-getAdminWebhooksSubscribeR :: Handler ()
-getAdminWebhooksSubscribeR = do
+getAdminWebhookHandler :: TwitchEventType -> Handler ()
+getAdminWebhookHandler eventType = do
   AppSettings {appDevelopment, appTwitchSettings} <- getsYesod appSettings
   let TwitchSettings {..} = appTwitchSettings
   -- Subscribe to webhooks for streamer, unless we are in the development
   -- environment where we don't have SSL termination
   unless appDevelopment $ do
     eAppAccessResponse <-
-      -- TODO: Probably should separate out this request in Twitch
       twitchRequestNoCreds
         (AppAccess twitchSettingsClientId twitchSettingsClientSecret)
         AppAccessPayload
     case eAppAccessResponse of
-      Left _ -> sendStatusJSON status401 ("Unable to subscribe to follow event" :: Text)
+      Left _ -> sendStatusJSON status401 ("Unable to subscribe to event" :: Text)
       Right AppAccessResponse {..} -> do
         let buildEventRequest =
               twitchRequest SubscribeToEvent twitchSettingsClientId (AccessToken appAccessAccessToken)
                 . buildSubscribeToEventPayload appTwitchSettings
-
-        -- Subscribe to webhooks
-        eFollowEventResponse <- buildEventRequest FollowEventType
-        eSubscribeEventResponse <- buildEventRequest SubscribeEventType
-        eCheerEventResponse <- buildEventRequest CheerEventType
-        eRaidEventResponse <- buildEventRequest RaidEventType
-
-        -- If any fail, the whole process failed...
-        case (eFollowEventResponse, eSubscribeEventResponse, eCheerEventResponse, eRaidEventResponse) of
-          (Left _, _, _, _) -> sendStatusJSON status401 ("Unable to subscribe to follow event" :: Text)
-          (_, Left _, _, _) -> sendStatusJSON status401 ("Unable to subscribe to subscribe event" :: Text)
-          (_, _, Left _, _) -> sendStatusJSON status401 ("Unable to subscribe to cheer event" :: Text)
-          (_, _, _, Left _) -> sendStatusJSON status401 ("Unable to subscribe to raid event" :: Text)
-          (Right followRes, Right subscribeRes, Right cheerRes, Right raidRes) -> do
+        eEventResponse <- buildEventRequest eventType
+        case eEventResponse of
+          Left _ -> sendStatusJSON status401 ("Unable to subscribe to event" :: Text)
+          Right res -> do
             -- Twitch docs say there should only be one result...
-            let [follow] = subscribeToEventResponseData followRes
-                [subscribe] = subscribeToEventResponseData subscribeRes
-                [cheer] = subscribeToEventResponseData cheerRes
-                [raid] = subscribeToEventResponseData raidRes
-                mkWebhookSubscription evt =
+            let [item] = subscribeToEventResponseData res
+                mkWebhookSubscription eventData =
                   WebhookSubscription
-                    { webhookSubscriptionEventId = tshow $ subscribeToEventDataId evt
-                    , webhookSubscriptionType = tshow $ subscribeToEventDataType evt
+                    { webhookSubscriptionEventId = tshow $ subscribeToEventDataId eventData
+                    , webhookSubscriptionType = tshow $ subscribeToEventDataType eventData
                     }
-            runDB $ do
-              insert_ $ mkWebhookSubscription follow
-              insert_ $ mkWebhookSubscription subscribe
-              insert_ $ mkWebhookSubscription cheer
-              insert_ $ mkWebhookSubscription raid
+            runDB . insert_ $ mkWebhookSubscription item
+
+getAdminWebhooksSubscribeFollowR :: Handler ()
+getAdminWebhooksSubscribeFollowR = getAdminWebhookHandler FollowEventType
+
+getAdminWebhooksSubscribeSubscribeR :: Handler ()
+getAdminWebhooksSubscribeSubscribeR = getAdminWebhookHandler SubscribeEventType
+
+getAdminWebhooksSubscribeCheerR :: Handler ()
+getAdminWebhooksSubscribeCheerR = getAdminWebhookHandler CheerEventType
+
+getAdminWebhooksSubscribeRaidR :: Handler ()
+getAdminWebhooksSubscribeRaidR = getAdminWebhookHandler RaidEventType

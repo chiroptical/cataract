@@ -24,4 +24,7 @@
 
 -- Admin pages
 /admin/webhooks AdminWebhooksR GET
-/admin/webhooks/subscribe AdminWebhooksSubscribeR GET
+/admin/webhooks/subscribe/follow AdminWebhooksSubscribeFollowR GET
+/admin/webhooks/subscribe/subscribe AdminWebhooksSubscribeSubscribeR GET
+/admin/webhooks/subscribe/raid AdminWebhooksSubscribeRaidR GET
+/admin/webhooks/subscribe/cheer AdminWebhooksSubscribeCheerR GET
