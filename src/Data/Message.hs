@@ -2,6 +2,14 @@ module Data.Message where
 
 import Import.NoFoundation
 
+data NoMatchingEventMessage = NoMatchingEventMessage
+
+instance ToJSON NoMatchingEventMessage where
+  toJSON NoMatchingEventMessage =
+    object
+      [ "kind" .= ("no-matching-event" :: Text)
+      ]
+
 data PingMessage = PingMessage
 
 instance ToJSON PingMessage where

@@ -17,7 +17,7 @@ import Network.Wai.EventSource.EventStream
 import Yesod.EventSource
 
 getServerSentEventsR :: Handler TypedContent
-getServerSentEventsR = pollingEventSource () serverSentEventsGenerator
+getServerSentEventsR = pollingEventSource (0 :: Integer) serverSentEventsGenerator
 
 fromText :: Text -> Builder
 fromText = fromByteString . TE.encodeUtf8
@@ -25,9 +25,19 @@ fromText = fromByteString . TE.encodeUtf8
 fromJSONToBuilder :: ToJSON a => a -> Builder
 fromJSONToBuilder = fromLazyByteString . encode
 
-serverSentEventsGenerator :: EventSourcePolyfill -> s -> Handler ([ServerEvent], s)
-serverSentEventsGenerator _ s = do
+mkServerEventList :: ToJSON a => Integer -> a -> [ServerEvent]
+mkServerEventList nextNumber obj =
+  [ ServerEvent
+      (Just "message")
+      (Just . fromText $ tshow nextNumber)
+      [fromJSONToBuilder obj]
+  ]
+
+serverSentEventsGenerator :: EventSourcePolyfill -> Integer -> Handler ([ServerEvent], Integer)
+serverSentEventsGenerator _ currentNumber = do
   liftIO $ threadDelay 1_000_000
+  let nextNumber = currentNumber + 1
+      mkServerEventMsg msg = (mkServerEventList currentNumber msg, nextNumber)
   mLeastRecentIncomplete <- runDB . select $ from queryLeastRecentIncompleteEvent
   case mLeastRecentIncomplete of
     [Entity queueId Queue {..}] -> do
@@ -36,76 +46,29 @@ serverSentEventsGenerator _ s = do
           set q [QueueCompleted =. val True]
           where_ $ q ^. #id ==. val queueId
         case queueEventKind of
-          Ping -> do
-            liftIO $ putStrLn "Sent ping event from database"
-            pure ( [ServerEvent
-                  (Just "message")
-                  (Just . fromText $ tshow queueId)
-                  [fromJSONToBuilder PingMessage]
-                ]
-              , s
-              )
+          Ping -> pure $ mkServerEventMsg PingMessage
           NewFollower -> do
             mFollowerEvent <- runDB $ get (coerce queueId :: FollowerEventId)
-            liftIO $ putStrLn "Sent follower event from database"
             pure $ case mFollowerEvent of
-              Nothing -> ([], s)
-              Just FollowerEvent {..} ->
-                ( [ServerEvent
-                      (Just "message")
-                      (Just . fromText $ tshow queueId)
-                      [fromJSONToBuilder $ FollowMessage followerEventTwitchUserName]
-                    ]
-                  , s
-                )
+              Nothing -> mkServerEventMsg NoMatchingEventMessage
+              Just FollowerEvent {..} -> mkServerEventMsg $ FollowMessage followerEventTwitchUserName
           NewSubscriber -> do
             mSubscriberEvent <- runDB $ get (coerce queueId :: SubscriberEventId)
-            liftIO $ putStrLn "Sent subscriber event from database"
             pure $ case mSubscriberEvent of
-              Nothing -> ([], s)
-              Just SubscriberEvent {..} ->
-                ( [ServerEvent
-                    (Just "message")
-                    (Just . fromText $ tshow queueId)
-                    [fromJSONToBuilder $ SubscribeMessage subscriberEventTwitchUserName]
-                  ]
-                , s
-                )
+              Nothing -> mkServerEventMsg NoMatchingEventMessage
+              Just SubscriberEvent {..} -> mkServerEventMsg $ SubscribeMessage subscriberEventTwitchUserName
           NewCheer -> do
             mCheerEvent <- runDB $ get (coerce queueId :: CheerEventId)
-            liftIO $ putStrLn "Sent cheer event from database"
             pure $ case mCheerEvent of
-              Nothing -> ([], s)
-              Just CheerEvent {..} ->
-                ( [ServerEvent
-                    (Just "message")
-                    (Just . fromText $ tshow queueId)
-                    [fromJSONToBuilder $ CheerMessage cheerEventTwitchUserName cheerEventBits]
-                  ]
-                , s
-                )
+              Nothing -> mkServerEventMsg NoMatchingEventMessage
+              Just CheerEvent {..} -> mkServerEventMsg $ CheerMessage cheerEventTwitchUserName cheerEventBits
           NewRaid -> do
             mRaidEvent <- runDB $ get (coerce queueId :: RaidEventId)
-            liftIO $ putStrLn "Sent raid event from database"
             pure $ case mRaidEvent of
-              Nothing -> ([], s)
-              Just RaidEvent {..} ->
-                ( [ServerEvent
-                    (Just "message")
-                    (Just . fromText $ tshow queueId)
-                    [fromJSONToBuilder $ RaidMessage raidEventTwitchUserName raidEventViewers]
-                  ]
-                , s
-                )
+              Nothing -> mkServerEventMsg NoMatchingEventMessage
+              Just RaidEvent {..} -> mkServerEventMsg $ RaidMessage raidEventTwitchUserName raidEventViewers
     -- The default action to keep the connection open, do not include an event id
-    _ ->
-      pure ( [ServerEvent
-            (Just "message")
-            (Just $ fromText "")
-            [fromJSONToBuilder PingMessage]
-            ]
-          , s
-          )
+    _ -> pure $ mkServerEventMsg PingMessage
 
 queryLeastRecentIncompleteEvent :: SqlQuery (SqlExpr (Entity Queue))
 queryLeastRecentIncompleteEvent = do

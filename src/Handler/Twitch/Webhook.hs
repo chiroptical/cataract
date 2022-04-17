@@ -33,12 +33,18 @@ postAdminReplayWebhookR queueId = do
   mQueue <- runDB $ get queueId
   case mQueue of
     Nothing -> sendStatusJSON status404 ("Unable to find event" :: Text)
-    Just Queue {..} -> do
-      runDB $
-        insert_
+    Just Queue {..} ->
+      runDB $ do
+        newQueueId <- insert
           Queue { queueEventKind = queueEventKind
                 , queueCompleted = False
                 }
+        case queueEventKind of
+          Ping -> pure ()
+          NewFollower -> updateWhere [FollowerEventQueueId ==. queueId] [FollowerEventQueueId =. newQueueId]
+          NewSubscriber -> updateWhere [SubscriberEventQueueId ==. queueId] [SubscriberEventQueueId =. newQueueId]
+          NewCheer -> updateWhere [CheerEventQueueId ==. queueId] [CheerEventQueueId =. newQueueId]
+          NewRaid -> updateWhere [RaidEventQueueId ==. queueId] [RaidEventQueueId =. newQueueId]
   redirect AdminWebhooksR
 
 getAdminWebhooksR :: Handler Html

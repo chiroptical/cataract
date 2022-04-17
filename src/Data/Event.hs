@@ -3,6 +3,7 @@ module Data.Event where
 import Data.Aeson
 import Data.Either
 import Data.Monoid
+import Data.Text                       (Text)
 import Database.Esqueleto.Experimental (PersistField (..), PersistFieldSql (..),
                                         PersistValue (..), SqlType (..))
 import GHC.Generics
