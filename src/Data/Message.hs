@@ -2,6 +2,14 @@ module Data.Message where
 
 import Import.NoFoundation
 
+data PingMessage = PingMessage
+
+instance ToJSON PingMessage where
+  toJSON PingMessage =
+    object
+      [ "kind" .= ("ping" :: Text)
+      ]
+
 newtype FollowMessage =
   FollowMessage
     { followMessageTwitchUserName :: Text

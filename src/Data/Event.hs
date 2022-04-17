@@ -8,7 +8,8 @@ import Database.Esqueleto.Experimental (PersistField (..), PersistFieldSql (..),
 import GHC.Generics
 
 data Event =
-    NewFollower
+    Ping
+  | NewFollower
   | NewSubscriber
   | NewCheer
   | NewRaid
@@ -18,6 +19,7 @@ instance ToJSON Event
 
 instance PersistField Event where
   toPersistValue = \case
+    Ping          -> PersistText "Ping"
     NewFollower   -> PersistText "NewFollower"
     NewSubscriber -> PersistText "NewSubscriber"
     NewCheer      -> PersistText "NewCheer"
@@ -26,6 +28,7 @@ instance PersistField Event where
   fromPersistValue = \case
     PersistText eventType ->
       case eventType of
+        "Ping"          -> Right Ping
         "NewFollower"   -> Right NewFollower
         "NewSubscriber" -> Right NewSubscriber
         "NewCheer"      -> Right NewCheer

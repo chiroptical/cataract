@@ -36,6 +36,14 @@ serverSentEventsGenerator _ s = do
         set q [QueueCompleted =. val True]
         where_ $ q ^. #id ==. val queueId
       case queueEventKind of
+        Ping ->
+          pure ( [ServerEvent
+              (Just "message")
+              (Just . fromText $ tshow queueId)
+              [fromJSONToBuilder PingMessage]
+            ]
+          , s
+          )
         NewFollower -> do
           mFollowerEvent <- runDB $ get (coerce queueId :: FollowerEventId)
           pure $ case mFollowerEvent of
@@ -85,7 +93,13 @@ serverSentEventsGenerator _ s = do
               , s
               )
     -- If there are no events, there is nothing to do
-    _ -> pure ([], s)
+    _ -> pure ( [ServerEvent
+              (Just "message")
+              (Just . fromText $ tshow (0 :: Int))
+              [fromJSONToBuilder PingMessage]
+            ]
+          , s
+          )
 
 queryMostRecentIncompleteEvent :: SqlQuery (SqlExpr (Entity Queue))
 queryMostRecentIncompleteEvent = do

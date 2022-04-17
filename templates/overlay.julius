@@ -87,5 +87,9 @@ sse.onopen = function() {
 
 sse.addEventListener("message", function(e) {
   const obj = JSON.parse(e.data)
-  textQueue.push(thankYou(obj.kind, obj.from, draw))
+  if (obj.kind === "ping") {
+    console.log("pong")
+  } else {
+    textQueue.push(thankYou(obj.kind, obj.from, draw))
+  }
 })
