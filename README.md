@@ -17,14 +17,11 @@ early work in progress.
 Next Steps
 ---
 
-- [ ] Finish rename to cataract
 - Tighten security up
-  - [x] More secure AES key  
+  - [x] More secure AES key
   - [ ] Encrypt Twitch tokens in the database
-  - [ ] Consider cloud flare, e.g. rate limiting on the API
-- Upgrade dynos to non-free versions
-- Deploy to cataract.chiroptical.dev
 - Could we use [reshape][reshape] for migrations?
+- Build a homepage that doesn't suck
 
 [twitch-cli]: https://dev.twitch.tv/docs/eventsub/handling-webhook-events#using-the-cli-to-test-your-handler
 [crypto-hmac]: https://hackage.haskell.org/package/cryptonite-0.30/docs/Crypto-MAC-HMAC.html
