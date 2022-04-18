@@ -99,9 +99,9 @@ instance Yesod App where
   makeSessionBackend :: App -> IO (Maybe SessionBackend)
   makeSessionBackend _ =
     Just
-      <$> defaultClientSessionBackend
-        120 -- timeout in minutes
-        "config/client_session_key.aes"
+      <$> envClientSessionBackend
+        180 -- 3 hours in minutes
+        "YESOD_CLIENT_SESSION_AES_KEY"
 
   -- Yesod Middleware allows you to run code before and after each handler function.
   -- The defaultYesodMiddleware adds the response header "Vary: Accept, Accept-Language" and performs authorization checks.

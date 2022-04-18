@@ -1,5 +1,5 @@
 {
-  description = "Homing Pigeon";
+  description = "Pluto";
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixpkgs-unstable";
