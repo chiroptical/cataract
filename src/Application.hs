@@ -52,6 +52,7 @@ import Handler.ServerSentEvents
 import Handler.Twitch.Followers
 import Handler.Twitch.Subscribers
 import Handler.Twitch.Webhook
+import Network.Wai.Middleware.ForceSSL      (forceSSL)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
 -- of the call to mkYesodData which occurs in Foundation.hs. Please see the
@@ -101,10 +102,18 @@ makeFoundation appSettings = do
 -}
 makeApplication :: App -> IO Application
 makeApplication foundation = do
+  let AppSettings {..} = appSettings foundation
   logWare <- makeLogWare foundation
   -- Create the WAI application and apply middlewares
   appPlain <- toWaiAppPlain foundation
-  pure $ logWare $ defaultMiddlewaresNoLogging appPlain
+  putStrLn $ tshow appDevelopment
+  let middlewares =
+          logWare
+        . defaultMiddlewaresNoLogging
+        . if appDevelopment
+             then id
+             else forceSSL
+  pure $ middlewares appPlain
 
 makeLogWare :: App -> IO Middleware
 makeLogWare foundation =
