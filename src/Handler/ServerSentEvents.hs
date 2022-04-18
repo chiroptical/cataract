@@ -26,10 +26,10 @@ fromJSONToBuilder :: ToJSON a => a -> Builder
 fromJSONToBuilder = fromLazyByteString . encode
 
 mkServerEventList :: ToJSON a => Integer -> a -> [ServerEvent]
-mkServerEventList nextNumber obj =
+mkServerEventList number obj =
   [ ServerEvent
       (Just "message")
-      (Just . fromText $ tshow nextNumber)
+      (Just . fromText $ tshow number)
       [fromJSONToBuilder obj]
   ]
 
