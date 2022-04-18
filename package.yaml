@@ -1,4 +1,4 @@
-name:    pluto
+name:    cataract
 version: "0.0.0"
 
 dependencies:
@@ -74,7 +74,7 @@ library:
 
 # Runnable executable for our application
 executables:
-  pluto:
+  cataract:
     main: main.hs
     source-dirs: app
     ghc-options:
@@ -82,15 +82,15 @@ executables:
     - -rtsopts
     - -with-rtsopts=-N
     dependencies:
-    - pluto
+    - cataract
 
 # Test suite
 tests:
-  pluto-test:
+  cataract-test:
     main: Spec.hs
     source-dirs: test
     ghc-options: -Wall
     dependencies:
-    - pluto
+    - cataract
     - hspec >=2.0.0
     - yesod-test

@@ -1,5 +1,5 @@
 {
-  description = "Pluto";
+  description = "cataract";
 
   inputs = {
     nixpkgs.url = "nixpkgs/nixpkgs-unstable";
@@ -17,7 +17,7 @@
         inherit system;
         config.allowBroken = true;
       };
-      pluto = pkgs.callPackage ./pluto.nix {};
+      cataract = pkgs.callPackage ./cataract.nix {};
       docker = pkgs.callPackage ./docker.nix {};
       twitch-cli = pkgs.callPackage ./nix/twitch-cli.nix {};
     in {
@@ -25,9 +25,9 @@
         inherit pkgs;
         inherit twitch-cli;
       };
-      defaultPackage = pluto;
+      defaultPackage = cataract;
       packages = flake-utils.lib.flattenTree {
-        inherit pluto;
+        inherit cataract;
         inherit docker;
       };
     });

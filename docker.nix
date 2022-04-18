@@ -1,6 +1,6 @@
 {pkgs, ...}: let
-  pluto = import ./pluto.nix pkgs;
-  exe = with pkgs.haskell.lib; dontCheck (justStaticExecutables pluto);
+  cataract = import ./cataract.nix pkgs;
+  exe = with pkgs.haskell.lib; dontCheck (justStaticExecutables cataract);
 in
   pkgs.dockerTools.buildImage {
     name = "cataract";
@@ -17,7 +17,7 @@ in
       config = "${./config}";
       configFileName = getFileName config;
     in ''
-      workDir=/build/pluto
+      workDir=/build/cataract
       mkdir -p $workDir
 
       cp -r ${./static} $workDir
@@ -27,9 +27,9 @@ in
       mv $workDir/${configFileName} $workDir/config
     '';
     config = {
-      WorkingDir = "/build/pluto";
+      WorkingDir = "/build/cataract";
       Cmd = [
-        "${exe}/bin/pluto"
+        "${exe}/bin/cataract"
       ];
     };
     created = "now";

@@ -1,6 +1,6 @@
 {-# LANGUAGE PackageImports #-}
 
-import "pluto" Application (develMain)
+import "cataract" Application (develMain)
 import Prelude             (IO)
 
 main :: IO ()

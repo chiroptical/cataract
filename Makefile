@@ -5,7 +5,7 @@ hpack:
 	hpack .
 
 run: hpack
-	cabal run	pluto
+	cabal run	cataract
 
 docker-build:
 	nix build .#docker

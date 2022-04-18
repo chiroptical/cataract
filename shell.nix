@@ -5,7 +5,7 @@
 }:
 pkgs.mkShell {
   inputsFrom = [
-    (import ./pluto.nix pkgs).env
+    (import ./cataract.nix pkgs).env
   ];
   buildInputs = with pkgs; [
     haskell-language-server
