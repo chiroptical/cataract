@@ -1,8 +1,8 @@
-# Pluto
+# Cataract
 
 [![Chiroptical](https://img.shields.io/badge/twitch.tv-chiroptical-purple?logo=twitch&style=for-the-badge)](https://twitch.tv/chiroptical)
 
-Pluto is a recursive acronym for "PLUto Twitch Overlay". The goal is to create
+Cataract is an Overlay for OBS. The goal is to create
 an open-source overlay with features similar to Streamlabs or Player.me. The
 overlay should be responsive via an API and handle new follows, subscriptions,
 and bit donations.
@@ -17,13 +17,13 @@ early work in progress.
 Next Steps
 ---
 
-- Pick a new name
+- [ ] Finish rename to cataract
 - Tighten security up
   - [x] More secure AES key  
   - [ ] Encrypt Twitch tokens in the database
   - [ ] Consider cloud flare, e.g. rate limiting on the API
 - Upgrade dynos to non-free versions
-- Deploy to `name`.chiroptical.dev
+- Deploy to cataract.chiroptical.dev
 - Could we use [reshape][reshape] for migrations?
 
 [twitch-cli]: https://dev.twitch.tv/docs/eventsub/handling-webhook-events#using-the-cli-to-test-your-handler
