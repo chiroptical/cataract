@@ -16,7 +16,7 @@ deploy:
 
 docker-run:
 	docker images
-	echo 'docker run --network host pluto:latest-tag'
+	echo 'docker run --network host cataract:latest-tag'
 
 format-nix:
 	alejandra .

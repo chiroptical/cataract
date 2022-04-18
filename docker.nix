@@ -3,7 +3,7 @@
   exe = with pkgs.haskell.lib; dontCheck (justStaticExecutables pluto);
 in
   pkgs.dockerTools.buildImage {
-    name = "pluto";
+    name = "cataract";
     contents = with pkgs; [
       bash
       coreutils
