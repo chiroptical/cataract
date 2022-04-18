@@ -19,7 +19,7 @@ Next Steps
 
 - Pick a new name
 - Tighten security up
-  - [ ] More secure AES key  
+  - [x] More secure AES key  
   - [ ] Encrypt Twitch tokens in the database
   - [ ] Consider cloud flare, e.g. rate limiting on the API
 - Upgrade dynos to non-free versions
