@@ -18,6 +18,7 @@ pkgs.mkShell {
     niv
     alejandra
     twitch-cli
+    doctl
 
     # animatorium
     nodejs
