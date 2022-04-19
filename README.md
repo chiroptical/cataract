@@ -20,9 +20,12 @@ Next Steps
 - Tighten security up
   - [x] More secure AES key
   - [ ] Encrypt Twitch tokens in the database
+- Include a middleware that ensures `Host` header is `YESOD_APPROOT`
+- Figure out [katip][katip] logging
 - Could we use [reshape][reshape] for migrations?
 - Build a homepage that doesn't suck
 
 [twitch-cli]: https://dev.twitch.tv/docs/eventsub/handling-webhook-events#using-the-cli-to-test-your-handler
 [crypto-hmac]: https://hackage.haskell.org/package/cryptonite-0.30/docs/Crypto-MAC-HMAC.html
+[katip]: https://hackage.haskell.org/package/katip
 [reshape]: https://github.com/fabianlindfors/reshape
