@@ -17,7 +17,9 @@ import Network.Wai.EventSource.EventStream
 import Yesod.EventSource
 
 getServerSentEventsR :: Handler TypedContent
-getServerSentEventsR = pollingEventSource (0 :: Integer) serverSentEventsGenerator
+getServerSentEventsR =
+  -- TODO: addHeader "Connection: keep-alive"
+  pollingEventSource (0 :: Integer) serverSentEventsGenerator
 
 fromText :: Text -> Builder
 fromText = fromByteString . TE.encodeUtf8
