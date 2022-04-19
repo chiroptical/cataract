@@ -12,6 +12,7 @@ library
   exposed-modules:
       AesonUtils
       Application
+      Data.Encrypt
       Data.Event.Follower
       Data.Event.Subscriber
       Data.EventKind
