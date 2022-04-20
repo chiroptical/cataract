@@ -1,4 +1,7 @@
+{-# LANGUAGE DerivingStrategies #-}
+{-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE GADTs #-}
+{-# LANGUAGE GeneralisedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
@@ -12,6 +15,7 @@ import Crypto.Error
 import Crypto.Random.Types qualified as CRT
 import Data.ByteArray (ByteArray)
 import Data.ByteArray.Encoding
+import Data.Text.Encoding qualified as TE
 
 -- TODO:
 -- Concatenate secret, initialization vector, and encrypted base16 text and store
@@ -85,3 +89,29 @@ standaloneDecrypt = do
                 Left err -> putStrLn $ tshow err
         _ ->
             putStrLn "It didn't work..."
+
+newtype EncryptedText = EncryptedText Text
+    deriving newtype (Show, PersistField)
+
+data EncryptionFailure
+    = UnableToGenerateInitializationVector
+    | UnableToDecodeSecretKeyFromEnvironment
+    | UnableToEncrypt CryptoError
+
+encryptText ::
+    (MonadUnliftIO m, MonadReader EncryptionSettings m) =>
+    Text ->
+    m (Either EncryptionFailure EncryptedText)
+encryptText msg = do
+    EncryptionSettings{..} <- ask
+    let eSecretKey :: Either String (Key AES256 ByteString)
+        eSecretKey = Key <$> convertFromBase Base64 encryptionSettingsCipherSecretKey
+    mInitIV <- liftIO $ genRandomIV (error "genRandomIV called argument in encryptText" :: AES256)
+    pure $ case (eSecretKey, mInitIV) of
+        (Left _, _) -> Left UnableToDecodeSecretKeyFromEnvironment
+        (_, Nothing) -> Left UnableToGenerateInitializationVector
+        (Right secretKey, Just initIV) ->
+            let eEncryptedMessage = encrypt secretKey initIV $ TE.encodeUtf8 msg
+             in case eEncryptedMessage of
+                    Left ce -> Left $ UnableToEncrypt ce
+                    Right encryptedMessage -> Right . EncryptedText $ TE.decodeUtf8 encryptedMessage

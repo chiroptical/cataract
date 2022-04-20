@@ -21,6 +21,7 @@ import Data.Aeson (
     (.:?),
  )
 import Data.FileEmbed (embedFile)
+import Data.Text.Encoding qualified as TE
 import Data.Yaml (decodeEither')
 import Database.Persist.Postgresql (PostgresConf)
 import Language.Haskell.TH.Syntax (Exp, Name, Q)
@@ -73,6 +74,8 @@ data AppSettings = AppSettings
       appAuthDummyLogin :: Bool
     , -- | Twitch Settings
       appTwitchSettings :: TwitchSettings
+    , -- | Encryption Settings
+      appEncryptionSettings :: EncryptionSettings
     }
 
 instance FromJSON AppSettings where
@@ -96,6 +99,7 @@ instance FromJSON AppSettings where
         appAnalytics <- o .:? "analytics"
 
         appTwitchSettings <- o .: "twitch"
+        appEncryptionSettings <- o .: "encryption"
 
         pure AppSettings{..}
 
@@ -113,6 +117,15 @@ instance FromJSON TwitchSettings where
         twitchSettingsStreamerId <- o .: "streamer-id"
         twitchSettingsCallback <- o .: "callback"
         pure TwitchSettings{..}
+
+newtype EncryptionSettings = EncryptionSettings
+    { encryptionSettingsCipherSecretKey :: ByteString
+    }
+
+instance FromJSON EncryptionSettings where
+    parseJSON = withObject "EncryptionSettings" $ \o -> do
+        encryptionSettingsCipherSecretKey <- TE.encodeUtf8 <$> o .: "cipher-secret-key"
+        pure EncryptionSettings{..}
 
 {- | Settings for 'widgetFile', such as which template languages to support and
  default Hamlet settings.
