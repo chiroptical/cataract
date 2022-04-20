@@ -10,7 +10,7 @@ import Import
 
 getProfileR :: Handler Html
 getProfileR = do
-    (_, user) <- requireAuthPair
-    defaultLayout $ do
-        setTitle $ toHtml @Text "Profile"
-        $(widgetFile "profile")
+  (_, user) <- requireAuthPair
+  defaultLayout $ do
+    setTitle $ toHtml @Text "Profile"
+    $(widgetFile "profile")

@@ -8,9 +8,9 @@ module Handler.Overlay where
 import Database.Esqueleto.Experimental qualified as Db
 import Import
 import Request.Twitch (
-    AccessToken (..),
-    TwitchRequest (..),
-    twitchRequest,
+  AccessToken (..),
+  TwitchRequest (..),
+  twitchRequest,
  )
 import Request.Twitch.Followers
 import Request.Twitch.Sql (queryCredentialsFromIdent)
@@ -18,9 +18,9 @@ import Request.Twitch.Subscribers
 
 emptyLayout :: Yesod site => WidgetFor site () -> HandlerFor site Html
 emptyLayout w = do
-    p <- widgetToPageContent w
-    withUrlRenderer
-        [hamlet|
+  p <- widgetToPageContent w
+  withUrlRenderer
+    [hamlet|
         $newline never
         $doctype 5
         <html>
@@ -42,25 +42,25 @@ emptyLayout w = do
 -}
 getOverlayR :: Handler Html
 getOverlayR = do
-    TwitchSettings{..} <- appTwitchSettings <$> getsYesod appSettings
-    -- The overlay is powered by streamer's Twitch credentials
-    -- If they aren't present we can't display anything
-    mTwitchCredentials <- runDB . Db.selectOne $ queryCredentialsFromIdent twitchSettingsStreamerId
-    Entity _ TwitchCredentials{..} <-
-        maybe
-            (sendStatusJSON status401 ("streamer must log in" :: Text))
-            pure
-            mTwitchCredentials
-    let accessToken = AccessToken twitchCredentialsAccessToken
-    -- Get the follower and subscriber count for the initial overlay content
-    (followerCount, subscriberCount) :: (Text, Text) <- do
-        let followersRequest = Followers twitchSettingsStreamerId
-        eFollowerResponse <- twitchRequest followersRequest twitchSettingsClientId accessToken FollowersPayload
-        let subscriberRequest = Subscribers twitchSettingsStreamerId
-        eSubscriberResponse <- twitchRequest subscriberRequest twitchSettingsClientId accessToken SubscribersPayload
-        case (eFollowerResponse, eSubscriberResponse) of
-            (Right (FollowersResponse x), Right (SubscribersResponse y)) -> pure (tshow x, tshow y)
-            _ -> pure ("No response", "from Twitch")
-    emptyLayout $ do
-        setTitle "Overlay"
-        $(widgetFile "overlay")
+  TwitchSettings{..} <- appTwitchSettings <$> getsYesod appSettings
+  -- The overlay is powered by streamer's Twitch credentials
+  -- If they aren't present we can't display anything
+  mTwitchCredentials <- runDB . Db.selectOne $ queryCredentialsFromIdent twitchSettingsStreamerId
+  Entity _ TwitchCredentials{..} <-
+    maybe
+      (sendStatusJSON status401 ("streamer must log in" :: Text))
+      pure
+      mTwitchCredentials
+  let accessToken = AccessToken twitchCredentialsAccessToken
+  -- Get the follower and subscriber count for the initial overlay content
+  (followerCount, subscriberCount) :: (Text, Text) <- do
+    let followersRequest = Followers twitchSettingsStreamerId
+    eFollowerResponse <- twitchRequest followersRequest twitchSettingsClientId accessToken FollowersPayload
+    let subscriberRequest = Subscribers twitchSettingsStreamerId
+    eSubscriberResponse <- twitchRequest subscriberRequest twitchSettingsClientId accessToken SubscribersPayload
+    case (eFollowerResponse, eSubscriberResponse) of
+      (Right (FollowersResponse x), Right (SubscribersResponse y)) -> pure (tshow x, tshow y)
+      _ -> pure ("No response", "from Twitch")
+  emptyLayout $ do
+    setTitle "Overlay"
+    $(widgetFile "overlay")

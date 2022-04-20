@@ -10,11 +10,11 @@ import Request.Twitch.Sql (queryCredentials)
 -}
 getTwitchCredentials :: Handler (Either TwitchError TwitchCredentials)
 getTwitchCredentials = do
-    mTwitchUser <- maybeAuthId
-    case mTwitchUser of
-        Nothing -> sendStatusJSON @_ @Text status401 "Please log in"
-        Just twitchUserId -> do
-            mTwitchCredentials <- runDB . Db.selectOne $ queryCredentials twitchUserId
-            pure $ case mTwitchCredentials of
-                Nothing -> Left UnableToFetchCredentials
-                Just (Entity _ creds) -> Right creds
+  mTwitchUser <- maybeAuthId
+  case mTwitchUser of
+    Nothing -> sendStatusJSON @_ @Text status401 "Please log in"
+    Just twitchUserId -> do
+      mTwitchCredentials <- runDB . Db.selectOne $ queryCredentials twitchUserId
+      pure $ case mTwitchCredentials of
+        Nothing -> Left UnableToFetchCredentials
+        Just (Entity _ creds) -> Right creds

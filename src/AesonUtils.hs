@@ -9,8 +9,8 @@ camelToSnake = camelTo2 '_'
 
 jsonDeriveSnakeCaseDropPrefix :: Text -> Options
 jsonDeriveSnakeCaseDropPrefix t =
-    defaultOptions
-        { fieldLabelModifier = camelToSnake . drop (length t)
-        , omitNothingFields = True
-        , constructorTagModifier = camelToSnake . drop (length t)
-        }
+  defaultOptions
+    { fieldLabelModifier = camelToSnake . drop (length t)
+    , omitNothingFields = True
+    , constructorTagModifier = camelToSnake . drop (length t)
+    }

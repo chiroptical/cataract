@@ -24,11 +24,11 @@ import Text.Blaze (ToMarkup (..))
 -- at:
 -- http://www.yesodweb.com/book/persistent/
 share
-    [mkPersist sqlSettings, mkMigrate "migrateAll"]
-    $(persistFileWith lowerCaseSettings "config/models.persistentmodels")
+  [mkPersist sqlSettings, mkMigrate "migrateAll"]
+  $(persistFileWith lowerCaseSettings "config/models.persistentmodels")
 
 instance ToMarkup QueueId where
-    toMarkup queueId = toMarkup $ toPathPiece queueId
+  toMarkup queueId = toMarkup $ toPathPiece queueId
 
 instance ToMarkup EventId where
-    toMarkup eventId = toMarkup $ toPathPiece eventId
+  toMarkup eventId = toMarkup $ toPathPiece eventId
