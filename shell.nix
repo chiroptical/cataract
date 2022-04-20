@@ -11,10 +11,10 @@ pkgs.mkShell {
     haskell-language-server
     haskellPackages.cabal-install
     haskellPackages.ghcid
-    haskellPackages.stylish-haskell
     haskellPackages.hlint
     haskellPackages.hpack
     haskellPackages.retrie
+    haskellPackages.fourmolu
     niv
     alejandra
     twitch-cli

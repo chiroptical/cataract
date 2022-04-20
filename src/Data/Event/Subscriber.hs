@@ -2,12 +2,11 @@ module Data.Event.Subscriber where
 
 import Import.NoFoundation
 
-data Subscriber =
-  Subscriber
-    { twitchUserName       :: Text
+data Subscriber = Subscriber
+    { twitchUserName :: Text
     , subscriptionDuration :: Int
-    , wasGifted            :: Bool
+    , wasGifted :: Bool
     }
-    deriving Generic
+    deriving (Generic)
 
 instance ToJSON Subscriber

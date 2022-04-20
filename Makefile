@@ -22,7 +22,7 @@ format-nix:
 	alejandra .
 
 format-haskell:
-	find app/ src/ test/ -name "*.hs" -exec stylish-haskell -i {} +
+	find app/ src/ test/ -name "*.hs" -exec fourmolu -i -o '-XTypeApplications' -o '-XImportQualifiedPost' {} +
 
 format: format-nix format-haskell
 
