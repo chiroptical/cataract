@@ -15,6 +15,7 @@ import Crypto.Error
 import Crypto.Random.Types qualified as CRT
 import Data.ByteArray (ByteArray)
 import Data.ByteArray.Encoding
+import Data.Text qualified as T
 import Data.Text.Encoding qualified as TE
 
 -- TODO:
@@ -25,7 +26,7 @@ data Key c a where
   Key :: (BlockCipher c, ByteArray a) => a -> Key c a
 
 instance (BlockCipher c, ByteArray a) => Show (Key c a) where
-  show (Key ba) = show (convertToBase Base16 ba :: ByteString)
+  show (Key ba) = show (convertToBase Base64 ba :: ByteString)
 
 -- | Generates a string of bytes (key) of a specific length for a given block cipher
 genSecretKey :: forall m c a. (CRT.MonadRandom m, BlockCipher c, ByteArray a) => c -> Int -> m (Key c a)
@@ -66,9 +67,9 @@ exampleAES128 msg = do
         Left err -> error $ show err
         Right (eMsg, dMsg) -> do
           putStrLn $ tshow secretKey
-          putStrLn $ tshow (convertToBase Base16 initIV :: ByteString)
+          putStrLn $ tshow (convertToBase Base64 initIV :: ByteString)
           putStrLn $ "Original Message: " <> tshow msg
-          putStrLn $ "Message after encryption: " <> tshow (convertToBase Base16 eMsg :: ByteString)
+          putStrLn $ "Message after encryption: " <> tshow (convertToBase Base64 eMsg :: ByteString)
           putStrLn $ "Message after decryption: " <> tshow dMsg
 
 standaloneDecrypt :: IO ()
@@ -95,8 +96,12 @@ newtype EncryptedText = EncryptedText Text
 
 data EncryptionFailure
   = UnableToGenerateInitializationVector
+  | UnableToDecodeInitializationVector
+  | UnableToMakeInitializationVector
   | UnableToDecodeSecretKeyFromEnvironment
-  | UnableToEncrypt CryptoError
+  | UnableToEncryptMessage CryptoError
+  | UnableToDecryptMessage CryptoError
+  deriving (Show)
 
 encryptText ::
   (MonadUnliftIO m, MonadReader EncryptionSettings m) =>
@@ -113,5 +118,48 @@ encryptText msg = do
     (Right secretKey, Just initIV) ->
       let eEncryptedMessage = encrypt secretKey initIV $ TE.encodeUtf8 msg
        in case eEncryptedMessage of
-            Left ce -> Left $ UnableToEncrypt ce
-            Right encryptedMessage -> Right . EncryptedText $ TE.decodeUtf8 encryptedMessage
+            Left ce -> Left $ UnableToEncryptMessage ce
+            Right encryptedMessage ->
+              Right . EncryptedText $
+                TE.decodeUtf8 $
+                  (convertToBase Base64 initIV :: ByteString)
+                    <> "."
+                    <> (convertToBase Base64 encryptedMessage :: ByteString)
+
+decryptText ::
+  (MonadUnliftIO m, MonadReader EncryptionSettings m) =>
+  EncryptedText ->
+  m (Either EncryptionFailure Text)
+decryptText (EncryptedText ivDotMessage) = do
+  EncryptionSettings{..} <- ask
+  let eSecretKey :: Either String (Key AES256 ByteString)
+      eSecretKey = Key <$> convertFromBase Base64 encryptionSettingsCipherSecretKey
+      (ivText, msgText) = T.drop 1 <$> T.breakOn "." ivDotMessage
+      eInitIV :: Either String (Maybe (IV AES256))
+      eInitIV =
+        makeIV @ByteString
+          <$> convertFromBase Base64 (TE.encodeUtf8 ivText)
+  pure $ case (eSecretKey, eInitIV) of
+    (Left _, _) -> Left UnableToDecodeSecretKeyFromEnvironment
+    (_, Left _) -> Left UnableToDecodeInitializationVector
+    (_, Right Nothing) -> Left UnableToMakeInitializationVector
+    (Right secretKey, Right (Just iv)) ->
+      let eDecryptedMessage = decrypt secretKey iv $ TE.encodeUtf8 msgText
+       in case eDecryptedMessage of
+            Left ce -> Left $ UnableToDecryptMessage ce
+            Right msg -> Right $ TE.decodeUtf8 msg
+
+-- TODO: decryptText is wrong somewhere in a `decodeUtf8`
+exampleAES256 :: IO ()
+exampleAES256 = do
+  let encryptionSettings =
+        EncryptionSettings
+          { encryptionSettingsCipherSecretKey = "LG43ovFqO0wVMIOh+PlXOtVJ4WNqO1rW0yLcXEiV9ow="
+          }
+  eEncryptedText <- liftIO $ runReaderT (encryptText "hello, world...") encryptionSettings
+  putStrLn $ tshow eEncryptedText
+  case eEncryptedText of
+    Left err -> putStrLn $ tshow err
+    Right encryptedText -> do
+      eDecryptedText <- liftIO $ runReaderT (decryptText encryptedText) encryptionSettings
+      putStrLn $ tshow eDecryptedText
