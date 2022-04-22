@@ -9,6 +9,7 @@ module Data.Encrypt where
 
 import Import.NoFoundation hiding (Key)
 
+import Control.Monad.Except
 import Crypto.Cipher.AES (AES256)
 import Crypto.Cipher.Types
 import Crypto.Error
@@ -97,35 +98,49 @@ newtype EncryptedText = EncryptedText Text
 data EncryptionFailure
   = UnableToGenerateInitializationVector
   | UnableToDecodeInitializationVector
+  | UnableToDecodeMessage
   | UnableToMakeInitializationVector
   | UnableToDecodeSecretKeyFromEnvironment
   | UnableToEncryptMessage CryptoError
   | UnableToDecryptMessage CryptoError
   deriving (Show)
 
-encryptText ::
-  (MonadUnliftIO m, MonadReader EncryptionSettings m) =>
-  Text ->
-  m (Either EncryptionFailure EncryptedText)
-encryptText msg = do
+mkSecretKey ::
+  (MonadUnliftIO m, MonadError EncryptionFailure m, MonadReader EncryptionSettings m) =>
+  m (Key AES256 ByteString)
+mkSecretKey = do
   EncryptionSettings{..} <- ask
-  let eSecretKey :: Either String (Key AES256 ByteString)
-      eSecretKey = Key <$> convertFromBase Base64 encryptionSettingsCipherSecretKey
-  mInitIV <- liftIO $ genRandomIV (error "genRandomIV called argument in encryptText" :: AES256)
-  pure $ case (eSecretKey, mInitIV) of
-    (Left _, _) -> Left UnableToDecodeSecretKeyFromEnvironment
-    (_, Nothing) -> Left UnableToGenerateInitializationVector
-    (Right secretKey, Just initIV) ->
-      let eEncryptedMessage = encrypt secretKey initIV $ TE.encodeUtf8 msg
-       in case eEncryptedMessage of
-            Left ce -> Left $ UnableToEncryptMessage ce
-            Right encryptedMessage ->
-              Right . EncryptedText $
-                TE.decodeUtf8 $
-                  (convertToBase Base64 initIV :: ByteString)
-                    <> "."
-                    <> (convertToBase Base64 encryptedMessage :: ByteString)
+  let eSecretKey = convertFromBase @_ @ByteString Base64 encryptionSettingsCipherSecretKey
+  case eSecretKey of
+    Left _ -> throwError UnableToDecodeSecretKeyFromEnvironment
+    Right secretKey -> pure $ Key secretKey
 
+mkInitIvRandom ::
+  (MonadUnliftIO m, MonadError EncryptionFailure m) =>
+  m (IV AES256)
+mkInitIvRandom = do
+  mInitIV <- liftIO $ genRandomIV (error "genRandomIV called argument in encryptText" :: AES256)
+  case mInitIV of
+    Nothing -> throwError UnableToGenerateInitializationVector
+    Just iv -> pure iv
+
+encryptText ::
+  (MonadUnliftIO m, MonadError EncryptionFailure m, MonadReader EncryptionSettings m) =>
+  Text ->
+  m EncryptedText
+encryptText msg = do
+  secretKey <- mkSecretKey
+  initIv <- mkInitIvRandom
+  case encrypt secretKey initIv $ TE.encodeUtf8 msg of
+    Left ce -> throwError $ UnableToEncryptMessage ce
+    Right encryptedMessage ->
+      pure . EncryptedText $
+        TE.decodeUtf8 $
+          (convertToBase Base64 initIv :: ByteString)
+            <> "."
+            <> (convertToBase Base64 encryptedMessage :: ByteString)
+
+-- TODO: Convert this to 'MonadError EncryptionFailure m' style
 decryptText ::
   (MonadUnliftIO m, MonadReader EncryptionSettings m) =>
   EncryptedText ->
@@ -144,22 +159,24 @@ decryptText (EncryptedText ivDotMessage) = do
     (_, Left _) -> Left UnableToDecodeInitializationVector
     (_, Right Nothing) -> Left UnableToMakeInitializationVector
     (Right secretKey, Right (Just iv)) ->
-      let eDecryptedMessage = decrypt secretKey iv $ TE.encodeUtf8 msgText
-       in case eDecryptedMessage of
-            Left ce -> Left $ UnableToDecryptMessage ce
-            Right msg -> Right $ TE.decodeUtf8 msg
+      let eEncryptedMessage = convertFromBase @_ @ByteString Base64 (TE.encodeUtf8 msgText)
+       in case eEncryptedMessage of
+            Left _ -> Left UnableToDecodeMessage
+            Right encryptedMsg ->
+              case decrypt secretKey iv encryptedMsg of
+                Left ce -> Left $ UnableToDecryptMessage ce
+                Right msg -> Right $ TE.decodeUtf8 msg
 
--- TODO: decryptText is wrong somewhere in a `decodeUtf8`
-exampleAES256 :: IO ()
-exampleAES256 = do
-  let encryptionSettings =
-        EncryptionSettings
-          { encryptionSettingsCipherSecretKey = "LG43ovFqO0wVMIOh+PlXOtVJ4WNqO1rW0yLcXEiV9ow="
-          }
-  eEncryptedText <- liftIO $ runReaderT (encryptText "hello, world...") encryptionSettings
-  putStrLn $ tshow eEncryptedText
-  case eEncryptedText of
-    Left err -> putStrLn $ tshow err
-    Right encryptedText -> do
-      eDecryptedText <- liftIO $ runReaderT (decryptText encryptedText) encryptionSettings
-      putStrLn $ tshow eDecryptedText
+-- exampleAES256 :: IO ()
+-- exampleAES256 = do
+--   let encryptionSettings =
+--         EncryptionSettings
+--           { encryptionSettingsCipherSecretKey = "LG43ovFqO0wVMIOh+PlXOtVJ4WNqO1rW0yLcXEiV9ow="
+--           }
+--   eEncryptedText <- liftIO $ runReaderT (encryptText "hello, world...") encryptionSettings
+--   putStrLn $ tshow eEncryptedText
+--   case eEncryptedText of
+--     Left err -> putStrLn $ tshow err
+--     Right encryptedText -> do
+--       eDecryptedText <- liftIO $ runReaderT (decryptText encryptedText) encryptionSettings
+--       putStrLn $ tshow eDecryptedText

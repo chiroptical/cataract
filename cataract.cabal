@@ -82,6 +82,7 @@ library
     , memory
     , monad-control
     , monad-logger
+    , mtl
     , persistent
     , persistent-postgresql
     , persistent-template
@@ -153,6 +154,7 @@ executable cataract
     , memory
     , monad-control
     , monad-logger
+    , mtl
     , persistent
     , persistent-postgresql
     , persistent-template
@@ -230,6 +232,7 @@ test-suite cataract-test
     , memory
     , monad-control
     , monad-logger
+    , mtl
     , persistent
     , persistent-postgresql
     , persistent-template

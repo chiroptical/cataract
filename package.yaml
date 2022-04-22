@@ -28,6 +28,7 @@ dependencies:
 - memory
 - monad-control
 - monad-logger
+- mtl
 - persistent
 - persistent-postgresql
 - persistent-template
