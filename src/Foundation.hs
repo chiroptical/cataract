@@ -277,8 +277,8 @@ instance YesodAuth App where
     (MonadHandler m, HandlerSite m ~ App) =>
     Creds App ->
     m (AuthenticationResult App)
-  authenticate Creds{..} = do
-    TwitchSettings{..} <- appTwitchSettings <$> getsYesod appSettings
+  authenticate Creds {..} = do
+    TwitchSettings {..} <- appTwitchSettings <$> getsYesod appSettings
     liftHandler . runDB $ do
       -- Determine if user already exists in the database and build the
       -- 'TwitchCredentials' record if possible
@@ -297,7 +297,7 @@ instance YesodAuth App where
       -- Determine if any non-streamer user has requested more than the 'user:read:email' scope
       case mUserResponse of
         Nothing -> pure $ ServerError "Unable to decode user response from Twitch"
-        Just UserResponse{..} -> do
+        Just UserResponse {..} -> do
           if credsIdent /= twitchSettingsStreamerId && userResponseScopes /= ["user:read:email"]
             then pure . UserError $ IdentifierNotFound "Log in as user"
             else case mTwitchUserIdent of
@@ -306,7 +306,7 @@ instance YesodAuth App where
               -- - update the Twitch credentials
               Just (Entity uid _) -> do
                 let mTwitchUserLogin = Map.lookup "login" credsExtraMap
-                forM_ (mkTwitchCredentials uid) $ \tc@TwitchCredentials{..} -> do
+                forM_ (mkTwitchCredentials uid) $ \tc@TwitchCredentials {..} -> do
                   case mTwitchUserLogin of
                     Nothing -> pure ()
                     Just twitchUserLogin -> void $ updateGet uid [TwitchUserLogin =. twitchUserLogin]
@@ -352,7 +352,7 @@ instance YesodAuth App where
         twitchSettingsClientSecret
     ]
     where
-      TwitchSettings{..} = appTwitchSettings $ appSettings app
+      TwitchSettings {..} = appTwitchSettings $ appSettings app
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult
@@ -365,11 +365,11 @@ isAuthenticated = do
 -- | Access function to determine if a user is logged in.
 isAuthenticatedAdmin :: Handler AuthResult
 isAuthenticatedAdmin = do
-  TwitchSettings{..} <- appTwitchSettings <$> getsYesod appSettings
+  TwitchSettings {..} <- appTwitchSettings <$> getsYesod appSettings
   mEntity <- maybeAuth
   pure $ case mEntity of
     Nothing -> Unauthorized "You must login to access this page"
-    Just (Entity _ TwitchUser{..}) ->
+    Just (Entity _ TwitchUser {..}) ->
       if twitchUserIdent == twitchSettingsStreamerId
         then Authorized
         else Unauthorized "Only the streamer can use this endpoint"

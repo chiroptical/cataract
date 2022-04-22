@@ -37,7 +37,7 @@ instance TwitchRequest AppAccess where
   twitchBaseUrl = "https://id.twitch.tv"
   twitchRequestMethod = POST
   twitchRequestPath = "oauth2/token"
-  twitchQueryParams AppAccess{..} =
+  twitchQueryParams AppAccess {..} =
     [ ("client_id", appAccessClientId)
     , ("client_secret", appAccessClientSecret)
     , ("grant_type", "client_credentials")

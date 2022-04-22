@@ -109,7 +109,7 @@ data TwitchEventDetails
   | UserLoginEventDetails TwitchEventDetailsUserLogin
   deriving (Show)
 
-deriveJSON (defaultOptions{sumEncoding = UntaggedValue}) ''TwitchEventDetails
+deriveJSON (defaultOptions {sumEncoding = UntaggedValue}) ''TwitchEventDetails
 
 data TwitchEvent = TwitchEvent
   { twitchEventSubscription :: TwitchSubscription

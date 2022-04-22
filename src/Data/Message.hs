@@ -23,7 +23,7 @@ newtype FollowMessage = FollowMessage
   }
 
 instance ToJSON FollowMessage where
-  toJSON FollowMessage{..} =
+  toJSON FollowMessage {..} =
     object
       [ "kind" .= ("follow" :: Text)
       , "from" .= followMessageTwitchUserName
@@ -34,7 +34,7 @@ newtype SubscribeMessage = SubscribeMessage
   }
 
 instance ToJSON SubscribeMessage where
-  toJSON SubscribeMessage{..} =
+  toJSON SubscribeMessage {..} =
     object
       [ "kind" .= ("subscription" :: Text)
       , "from" .= subscribeMessageTwitchUserName
@@ -46,7 +46,7 @@ data CheerMessage = CheerMessage
   }
 
 instance ToJSON CheerMessage where
-  toJSON CheerMessage{..} =
+  toJSON CheerMessage {..} =
     object
       [ "kind" .= ("cheer" :: Text)
       , "from" .= cheerMessageTwitchUserName
@@ -59,7 +59,7 @@ data RaidMessage = RaidMessage
   }
 
 instance ToJSON RaidMessage where
-  toJSON RaidMessage{..} =
+  toJSON RaidMessage {..} =
     object
       [ "kind" .= ("raid" :: Text)
       , "from" .= raidMessageTwitchUserName

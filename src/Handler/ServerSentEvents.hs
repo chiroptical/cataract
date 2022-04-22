@@ -47,7 +47,7 @@ serverSentEventsGenerator _ currentNumber = do
       mkServerEventMsg msg = (mkServerEventList currentNumber msg, nextNumber)
   mLeastRecentIncomplete <- runDB . select $ from queryLeastRecentIncompleteEvent
   case mLeastRecentIncomplete of
-    [(Entity queueId Queue{}, Entity eventId Event{..})] -> do
+    [(Entity queueId Queue {}, Entity eventId Event {..})] -> do
       -- Mark the event as completed, we should have a replay system at some point
       void . runDB . update $ \q -> do
         set q [QueueCompleted =. val True]
@@ -58,22 +58,22 @@ serverSentEventsGenerator _ currentNumber = do
           mFollowerEvent <- runDB $ get (coerce eventId :: FollowerEventId)
           pure $ case mFollowerEvent of
             Nothing -> mkServerEventMsg NoMatchingEventMessage
-            Just FollowerEvent{..} -> mkServerEventMsg $ FollowMessage followerEventTwitchUserName
+            Just FollowerEvent {..} -> mkServerEventMsg $ FollowMessage followerEventTwitchUserName
         NewSubscriberKind -> do
           mSubscriberEvent <- runDB $ get (coerce eventId :: SubscriberEventId)
           pure $ case mSubscriberEvent of
             Nothing -> mkServerEventMsg NoMatchingEventMessage
-            Just SubscriberEvent{..} -> mkServerEventMsg $ SubscribeMessage subscriberEventTwitchUserName
+            Just SubscriberEvent {..} -> mkServerEventMsg $ SubscribeMessage subscriberEventTwitchUserName
         NewCheerKind -> do
           mCheerEvent <- runDB $ get (coerce eventId :: CheerEventId)
           pure $ case mCheerEvent of
             Nothing -> mkServerEventMsg NoMatchingEventMessage
-            Just CheerEvent{..} -> mkServerEventMsg $ CheerMessage cheerEventTwitchUserName cheerEventBits
+            Just CheerEvent {..} -> mkServerEventMsg $ CheerMessage cheerEventTwitchUserName cheerEventBits
         NewRaidKind -> do
           mRaidEvent <- runDB $ get (coerce eventId :: RaidEventId)
           pure $ case mRaidEvent of
             Nothing -> mkServerEventMsg NoMatchingEventMessage
-            Just RaidEvent{..} -> mkServerEventMsg $ RaidMessage raidEventTwitchUserName raidEventViewers
+            Just RaidEvent {..} -> mkServerEventMsg $ RaidMessage raidEventTwitchUserName raidEventViewers
     -- The default action to keep the connection open, do not include an event id
     _ -> pure $ mkServerEventMsg PingMessage
 

@@ -42,11 +42,11 @@ emptyLayout w = do
 -}
 getOverlayR :: Handler Html
 getOverlayR = do
-  TwitchSettings{..} <- appTwitchSettings <$> getsYesod appSettings
+  TwitchSettings {..} <- appTwitchSettings <$> getsYesod appSettings
   -- The overlay is powered by streamer's Twitch credentials
   -- If they aren't present we can't display anything
   mTwitchCredentials <- runDB . Db.selectOne $ queryCredentialsFromIdent twitchSettingsStreamerId
-  Entity _ TwitchCredentials{..} <-
+  Entity _ TwitchCredentials {..} <-
     maybe
       (sendStatusJSON status401 ("streamer must log in" :: Text))
       pure

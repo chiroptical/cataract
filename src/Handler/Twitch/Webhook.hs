@@ -34,7 +34,7 @@ postAdminReplayWebhookR eventId = do
   mEvent <- runDB $ get eventId
   case mEvent of
     Nothing -> sendStatusJSON status404 ("Unable to find event" :: Text)
-    Just Event{} ->
+    Just Event {} ->
       runDB $
         insert_
           Queue
@@ -52,7 +52,7 @@ getAdminWebhooksR = do
 
 postTwitchWebhookR :: Handler ()
 postTwitchWebhookR = do
-  TwitchSettings{..} <- appTwitchSettings <$> getsYesod appSettings
+  TwitchSettings {..} <- appTwitchSettings <$> getsYesod appSettings
   request <- waiRequest
   body <- T.concat <$> runConduit (rawRequestBody .| CT.decode CT.utf8 .| CL.consume)
   let requestHeaderMap = Map.fromList $ requestHeaders request
@@ -71,7 +71,7 @@ postTwitchWebhookR = do
         let mTwitchChallenge = decodeStrict @TwitchChallenge bodyBs
         case mTwitchChallenge of
           Nothing -> sendStatusJSON status401 ("Unable to decode challenge" :: Text)
-          Just TwitchChallenge{..} -> do
+          Just TwitchChallenge {..} -> do
             let response =
                   responseLBS
                     status200
@@ -85,13 +85,13 @@ postTwitchWebhookR = do
           -- TODO: Store the event
           Just
             TwitchEvent
-              { twitchEventSubscription = TwitchSubscription{..}
+              { twitchEventSubscription = TwitchSubscription {..}
               , twitchEventEvent = event
               } -> do
               case (twitchSubscriptionType, event) of
-                (FollowEventType, BaseEventDetails TwitchEventDetailsBase{..}) ->
+                (FollowEventType, BaseEventDetails TwitchEventDetailsBase {..}) ->
                   runDB $ do
-                    eventId <- insert $ Event{eventKind = NewFollowerKind}
+                    eventId <- insert $ Event {eventKind = NewFollowerKind}
                     insert_ $
                       FollowerEvent
                         { followerEventEventId = eventId
@@ -102,9 +102,9 @@ postTwitchWebhookR = do
                         { queueEventId = eventId
                         , queueCompleted = False
                         }
-                (SubscribeEventType, BaseEventDetails TwitchEventDetailsBase{..}) ->
+                (SubscribeEventType, BaseEventDetails TwitchEventDetailsBase {..}) ->
                   runDB $ do
-                    eventId <- insert $ Event{eventKind = NewSubscriberKind}
+                    eventId <- insert $ Event {eventKind = NewSubscriberKind}
                     insert_ $
                       SubscriberEvent
                         { subscriberEventEventId = eventId
@@ -115,9 +115,9 @@ postTwitchWebhookR = do
                         { queueEventId = eventId
                         , queueCompleted = False
                         }
-                (CheerEventType, CheerEventDetails TwitchEventDetailsCheer{..}) ->
+                (CheerEventType, CheerEventDetails TwitchEventDetailsCheer {..}) ->
                   runDB $ do
-                    eventId <- insert $ Event{eventKind = NewCheerKind}
+                    eventId <- insert $ Event {eventKind = NewCheerKind}
                     insert_ $
                       CheerEvent
                         { cheerEventEventId = eventId
@@ -129,9 +129,9 @@ postTwitchWebhookR = do
                         { queueEventId = eventId
                         , queueCompleted = False
                         }
-                (RaidEventType, RaidEventDetails TwitchEventDetailsRaid{..}) ->
+                (RaidEventType, RaidEventDetails TwitchEventDetailsRaid {..}) ->
                   runDB $ do
-                    eventId <- insert $ Event{eventKind = NewRaidKind}
+                    eventId <- insert $ Event {eventKind = NewRaidKind}
                     insert_ $
                       RaidEvent
                         { raidEventEventId = eventId
@@ -150,8 +150,8 @@ postTwitchWebhookR = do
 
 getAdminWebhookHandler :: TwitchEventType -> Handler ()
 getAdminWebhookHandler eventType = do
-  AppSettings{appDevelopment, appTwitchSettings} <- getsYesod appSettings
-  let TwitchSettings{..} = appTwitchSettings
+  AppSettings {appDevelopment, appTwitchSettings} <- getsYesod appSettings
+  let TwitchSettings {..} = appTwitchSettings
   -- Subscribe to webhooks for streamer, unless we are in the development
   -- environment where we don't have SSL termination
   unless appDevelopment $ do
@@ -161,7 +161,7 @@ getAdminWebhookHandler eventType = do
         AppAccessPayload
     case eAppAccessResponse of
       Left _ -> sendStatusJSON status401 ("Unable to subscribe to event" :: Text)
-      Right AppAccessResponse{..} -> do
+      Right AppAccessResponse {..} -> do
         let buildEventRequest =
               twitchRequest SubscribeToEvent twitchSettingsClientId (AccessToken appAccessAccessToken)
                 . buildSubscribeToEventPayload appTwitchSettings

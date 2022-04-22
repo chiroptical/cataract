@@ -101,7 +101,7 @@ instance FromJSON AppSettings where
     appTwitchSettings <- o .: "twitch"
     appEncryptionSettings <- o .: "encryption"
 
-    pure AppSettings{..}
+    pure AppSettings {..}
 
 data TwitchSettings = TwitchSettings
   { twitchSettingsClientId :: Text
@@ -116,7 +116,7 @@ instance FromJSON TwitchSettings where
     twitchSettingsClientSecret <- o .: "client-secret"
     twitchSettingsStreamerId <- o .: "streamer-id"
     twitchSettingsCallback <- o .: "callback"
-    pure TwitchSettings{..}
+    pure TwitchSettings {..}
 
 newtype EncryptionSettings = EncryptionSettings
   { encryptionSettingsCipherSecretKey :: ByteString
@@ -125,7 +125,7 @@ newtype EncryptionSettings = EncryptionSettings
 instance FromJSON EncryptionSettings where
   parseJSON = withObject "EncryptionSettings" $ \o -> do
     encryptionSettingsCipherSecretKey <- TE.encodeUtf8 <$> o .: "cipher-secret-key"
-    pure EncryptionSettings{..}
+    pure EncryptionSettings {..}
 
 {- | Settings for 'widgetFile', such as which template languages to support and
  default Hamlet settings.

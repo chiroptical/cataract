@@ -109,7 +109,7 @@ mkSecretKey ::
   (MonadUnliftIO m, MonadError EncryptionFailure m, MonadReader EncryptionSettings m) =>
   m (Key AES256 ByteString)
 mkSecretKey = do
-  EncryptionSettings{..} <- ask
+  EncryptionSettings {..} <- ask
   let eSecretKey = convertFromBase @_ @ByteString Base64 encryptionSettingsCipherSecretKey
   case eSecretKey of
     Left _ -> throwError UnableToDecodeSecretKeyFromEnvironment
@@ -146,7 +146,7 @@ decryptText ::
   EncryptedText ->
   m (Either EncryptionFailure Text)
 decryptText (EncryptedText ivDotMessage) = do
-  EncryptionSettings{..} <- ask
+  EncryptionSettings {..} <- ask
   let eSecretKey :: Either String (Key AES256 ByteString)
       eSecretKey = Key <$> convertFromBase Base64 encryptionSettingsCipherSecretKey
       (ivText, msgText) = T.drop 1 <$> T.breakOn "." ivDotMessage

@@ -94,7 +94,7 @@ makeFoundation appSettings = do
   -- temporary foundation without a real connection pool, get a log function
   -- from there, and then create the real foundation.
   let appStatic = myStatic
-      mkFoundation appConnPool = App{..}
+      mkFoundation appConnPool = App {..}
       -- The App {..} syntax is an example of record wild cards. For more
       -- information, see:
       -- https://ocharles.org.uk/blog/posts/2014-12-04-record-wildcards.html
@@ -119,7 +119,7 @@ makeFoundation appSettings = do
 -}
 makeApplication :: App -> IO Application
 makeApplication foundation = do
-  let AppSettings{..} = appSettings foundation
+  let AppSettings {..} = appSettings foundation
   logWare <- makeLogWare foundation
   -- Create the WAI application and apply middlewares
   appPlain <- toWaiAppPlain foundation

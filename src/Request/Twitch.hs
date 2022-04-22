@@ -56,7 +56,7 @@ class TwitchRequest endpoint where
     AccessToken ->
     TwitchPayload endpoint ->
     m (Either TwitchError (TwitchResponse endpoint))
-  twitchRequest endpoint clientId AccessToken{..} payload = do
+  twitchRequest endpoint clientId AccessToken {..} payload = do
     let opts =
           twitchRequestOptions endpoint
             & header "Authorization" .~ ["Bearer " <> Text.encodeUtf8 accessToken]

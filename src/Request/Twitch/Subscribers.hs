@@ -35,4 +35,4 @@ instance TwitchRequest Subscribers where
   type TwitchResponse Subscribers = SubscribersResponse
   twitchRequestMethod = GET
   twitchRequestPath = "subscriptions"
-  twitchQueryParams Subscribers{..} = [("broadcaster_id", subscribersBroadcasterId)]
+  twitchQueryParams Subscribers {..} = [("broadcaster_id", subscribersBroadcasterId)]

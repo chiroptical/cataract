@@ -35,4 +35,4 @@ instance TwitchRequest Followers where
   type TwitchResponse Followers = FollowersResponse
   twitchRequestMethod = GET
   twitchRequestPath = "users/follows"
-  twitchQueryParams Followers{..} = [("to_id", followersToId)]
+  twitchQueryParams Followers {..} = [("to_id", followersToId)]

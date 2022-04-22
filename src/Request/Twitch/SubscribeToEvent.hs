@@ -34,7 +34,7 @@ data Condition
   | RaidC RaidCondition
   deriving (Show)
 
-deriveJSON (defaultOptions{sumEncoding = UntaggedValue}) ''Condition
+deriveJSON (defaultOptions {sumEncoding = UntaggedValue}) ''Condition
 
 data Transport = Transport
   { transportMethod :: Text
@@ -78,7 +78,7 @@ instance TwitchRequest SubscribeToEvent where
   twitchQueryParams _ = []
 
 buildSubscribeToEventPayload :: TwitchSettings -> TwitchEventType -> SubscribeToEventPayload
-buildSubscribeToEventPayload TwitchSettings{..} twitchEvType =
+buildSubscribeToEventPayload TwitchSettings {..} twitchEvType =
   SubscribeToEventPayload
     { subscribeToEventPayloadType = twitchEvType
     , subscribeToEventPayloadVersion = "1"

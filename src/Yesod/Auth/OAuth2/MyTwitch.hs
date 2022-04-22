@@ -35,7 +35,7 @@ myAuthOAuth2 display name = authOAuth2Widget [whamlet|#{display}|] name
 oauth2TwitchScoped :: YesodAuth m => Text -> Text -> [Text] -> Text -> Text -> AuthPlugin m
 oauth2TwitchScoped displayText pluginName scopes clientId clientSecret =
   myAuthOAuth2 displayText pluginName oauth2 $ \manager token -> do
-    (User{..}, userResponse) <-
+    (User {..}, userResponse) <-
       authGetProfile
         pluginName
         manager
