@@ -3,6 +3,7 @@
 {-# LANGUAGE GADTs #-}
 {-# LANGUAGE GeneralisedNewtypeDeriving #-}
 {-# LANGUAGE OverloadedStrings #-}
+{-# LANGUAGE RankNTypes #-}
 {-# LANGUAGE ScopedTypeVariables #-}
 
 module Data.Encrypt where
@@ -54,44 +55,6 @@ encrypt secretKey initIV msg =
 decrypt :: (BlockCipher c, ByteArray a) => Key c a -> IV c -> a -> Either CryptoError a
 decrypt = encrypt
 
-exampleAES128 :: ByteString -> IO ()
-exampleAES128 msg = do
-  -- secret key needs 256 bits (32 * 8)
-  secretKey <- genSecretKey (error "genSecretKey called argument" :: AES256) 32
-  mInitIV <- genRandomIV (error "genRandomIV called argument" :: AES256)
-  case mInitIV of
-    Nothing -> error "Failed to generate and initialization vector."
-    Just initIV -> do
-      let encryptedMsg = encrypt secretKey initIV msg
-          decryptedMsg = decrypt secretKey initIV =<< encryptedMsg
-      case (,) <$> encryptedMsg <*> decryptedMsg of
-        Left err -> error $ show err
-        Right (eMsg, dMsg) -> do
-          putStrLn $ tshow secretKey
-          putStrLn $ tshow (convertToBase Base64 initIV :: ByteString)
-          putStrLn $ "Original Message: " <> tshow msg
-          putStrLn $ "Message after encryption: " <> tshow (convertToBase Base64 eMsg :: ByteString)
-          putStrLn $ "Message after decryption: " <> tshow dMsg
-
-standaloneDecrypt :: IO ()
-standaloneDecrypt = do
-  let eSecretKey :: Either String (Key AES256 ByteString)
-      eSecretKey = Key <$> convertFromBase Base16 ("38392ee7c8ad135da9f69ac947085354fec557e324a10fc2675ab6ccb657979d" :: ByteString)
-  let eInitIV :: Either String (Maybe (IV AES256))
-      eInitIV =
-        makeIV @ByteString
-          <$> convertFromBase Base16 ("5582b8783a29f1aeae0f4cf0afa120ed" :: ByteString)
-  let eMsg :: Either String ByteString
-      eMsg = convertFromBase Base16 ("7a3c467e9e6f04e8811709befe8361" :: ByteString)
-  case (eSecretKey, eInitIV, eMsg) of
-    (Right secretKey, Right (Just initIV), Right encryptedMsg) -> do
-      let decryptedMsg = decrypt secretKey initIV encryptedMsg
-      case decryptedMsg of
-        Right msg -> putStrLn $ tshow msg
-        Left err -> putStrLn $ tshow err
-    _ ->
-      putStrLn "It didn't work..."
-
 newtype EncryptedText = EncryptedText Text
   deriving newtype (Show, PersistField)
 
@@ -105,9 +68,11 @@ data EncryptionFailure
   | UnableToDecryptMessage CryptoError
   deriving (Show)
 
+type EncryptM m a = ExceptT EncryptionFailure m a
+
 mkSecretKey ::
-  (MonadUnliftIO m, MonadError EncryptionFailure m, MonadReader EncryptionSettings m) =>
-  m (Key AES256 ByteString)
+  (MonadUnliftIO m, MonadReader EncryptionSettings m) =>
+  EncryptM m (Key AES256 ByteString)
 mkSecretKey = do
   EncryptionSettings {..} <- ask
   let eSecretKey = convertFromBase @_ @ByteString Base64 encryptionSettingsCipherSecretKey
@@ -115,19 +80,39 @@ mkSecretKey = do
     Left _ -> throwError UnableToDecodeSecretKeyFromEnvironment
     Right secretKey -> pure $ Key secretKey
 
+convertFromBase64With ::
+  (MonadUnliftIO m, MonadReader EncryptionSettings m) =>
+  EncryptionFailure ->
+  ByteString ->
+  EncryptM m ByteString
+convertFromBase64With ef bs = do
+  case convertFromBase Base64 bs of
+    Left _ -> throwError ef
+    Right x -> pure x
+
 mkInitIvRandom ::
-  (MonadUnliftIO m, MonadError EncryptionFailure m) =>
-  m (IV AES256)
+  (MonadUnliftIO m, MonadReader EncryptionSettings m) =>
+  EncryptM m (IV AES256)
 mkInitIvRandom = do
   mInitIV <- liftIO $ genRandomIV (error "genRandomIV called argument in encryptText" :: AES256)
   case mInitIV of
     Nothing -> throwError UnableToGenerateInitializationVector
     Just iv -> pure iv
 
-encryptText ::
-  (MonadUnliftIO m, MonadError EncryptionFailure m, MonadReader EncryptionSettings m) =>
+mkInitIv ::
+  (MonadUnliftIO m, MonadReader EncryptionSettings m) =>
   Text ->
-  m EncryptedText
+  EncryptM m (IV AES256)
+mkInitIv ivText = do
+  encoded <- convertFromBase64With UnableToDecodeInitializationVector (TE.encodeUtf8 ivText)
+  case makeIV encoded of
+    Nothing -> throwError UnableToDecodeInitializationVector
+    Just x -> pure x
+
+encryptText ::
+  (MonadUnliftIO m, MonadReader EncryptionSettings m) =>
+  Text ->
+  EncryptM m EncryptedText
 encryptText msg = do
   secretKey <- mkSecretKey
   initIv <- mkInitIvRandom
@@ -140,43 +125,37 @@ encryptText msg = do
             <> "."
             <> (convertToBase Base64 encryptedMessage :: ByteString)
 
--- TODO: Convert this to 'MonadError EncryptionFailure m' style
 decryptText ::
   (MonadUnliftIO m, MonadReader EncryptionSettings m) =>
   EncryptedText ->
-  m (Either EncryptionFailure Text)
+  EncryptM m Text
 decryptText (EncryptedText ivDotMessage) = do
-  EncryptionSettings {..} <- ask
-  let eSecretKey :: Either String (Key AES256 ByteString)
-      eSecretKey = Key <$> convertFromBase Base64 encryptionSettingsCipherSecretKey
-      (ivText, msgText) = T.drop 1 <$> T.breakOn "." ivDotMessage
-      eInitIV :: Either String (Maybe (IV AES256))
-      eInitIV =
-        makeIV @ByteString
-          <$> convertFromBase Base64 (TE.encodeUtf8 ivText)
-  pure $ case (eSecretKey, eInitIV) of
-    (Left _, _) -> Left UnableToDecodeSecretKeyFromEnvironment
-    (_, Left _) -> Left UnableToDecodeInitializationVector
-    (_, Right Nothing) -> Left UnableToMakeInitializationVector
-    (Right secretKey, Right (Just iv)) ->
-      let eEncryptedMessage = convertFromBase @_ @ByteString Base64 (TE.encodeUtf8 msgText)
-       in case eEncryptedMessage of
-            Left _ -> Left UnableToDecodeMessage
-            Right encryptedMsg ->
-              case decrypt secretKey iv encryptedMsg of
-                Left ce -> Left $ UnableToDecryptMessage ce
-                Right msg -> Right $ TE.decodeUtf8 msg
+  let (ivText, msgText) = T.drop 1 <$> T.breakOn "." ivDotMessage
+  secretKey <- mkSecretKey
+  iv <- mkInitIv ivText
+  encryptedMessage <- convertFromBase64With UnableToDecodeMessage (TE.encodeUtf8 msgText)
+  case decrypt secretKey iv encryptedMessage of
+    Left ce -> throwError $ UnableToDecryptMessage ce
+    Right msg -> pure $ TE.decodeUtf8 msg
 
--- exampleAES256 :: IO ()
--- exampleAES256 = do
---   let encryptionSettings =
---         EncryptionSettings
---           { encryptionSettingsCipherSecretKey = "LG43ovFqO0wVMIOh+PlXOtVJ4WNqO1rW0yLcXEiV9ow="
---           }
---   eEncryptedText <- liftIO $ runReaderT (encryptText "hello, world...") encryptionSettings
---   putStrLn $ tshow eEncryptedText
---   case eEncryptedText of
---     Left err -> putStrLn $ tshow err
---     Right encryptedText -> do
---       eDecryptedText <- liftIO $ runReaderT (decryptText encryptedText) encryptionSettings
---       putStrLn $ tshow eDecryptedText
+runEncryptM ::
+  EncryptionSettings ->
+  (forall m. (MonadUnliftIO m, MonadReader EncryptionSettings m) => EncryptM m a) ->
+  IO (Either EncryptionFailure a)
+runEncryptM es action = liftIO $ runReaderT (runExceptT action) es
+
+-- TODO: Property tests!
+-- TODO: Document functions
+-- TODO: Implement To/From Persist entities to use 'EncryptedText'
+exampleAES256 :: IO ()
+exampleAES256 = do
+  let encryptionSettings =
+        EncryptionSettings
+          { encryptionSettingsCipherSecretKey = "LG43ovFqO0wVMIOh+PlXOtVJ4WNqO1rW0yLcXEiV9ow="
+          }
+  result <-
+    runEncryptM encryptionSettings $
+      decryptText =<< encryptText "hello, world..."
+  case result of
+    Left e -> putStrLn $ tshow e
+    Right msg -> putStrLn $ tshow msg
