@@ -6,6 +6,8 @@ cabal-version: 1.12
 
 name:           cataract
 version:        0.0.0
+license:        AGPL-3
+license-file:   LICENSE
 build-type:     Simple
 
 library
@@ -75,7 +77,10 @@ library
     , fast-logger
     , file-embed
     , foreign-store
+    , hedgehog
     , hjsmin
+    , hspec
+    , hspec-hedgehog
     , http-client-tls
     , http-conduit
     , lens
@@ -147,7 +152,10 @@ executable cataract
     , fast-logger
     , file-embed
     , foreign-store
+    , hedgehog
     , hjsmin
+    , hspec
+    , hspec-hedgehog
     , http-client-tls
     , http-conduit
     , lens
@@ -186,7 +194,6 @@ test-suite cataract-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
-      Handler.CommentSpec
       Handler.CommonSpec
       Handler.HomeSpec
       Handler.ProfileSpec
@@ -224,8 +231,10 @@ test-suite cataract-test
     , fast-logger
     , file-embed
     , foreign-store
+    , hedgehog
     , hjsmin
     , hspec >=2.0.0
+    , hspec-hedgehog
     , http-client-tls
     , http-conduit
     , lens

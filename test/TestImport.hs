@@ -9,8 +9,10 @@ module TestImport (
 
 import Application (makeFoundation, makeLogWare)
 import ClassyPrelude as X hiding (Handler, delete, deleteBy)
+import Database.Esqueleto.Experimental (rawExecute)
 import Database.Persist as X hiding (get)
 import Database.Persist.Sql (SqlPersistM, rawSql, runSqlPersistMPool, unSingle)
+import Database.Persist.SqlBackend (getEscapeRawNameFunction)
 import Foundation as X
 import Model as X
 import Test.Hspec as X
@@ -48,7 +50,11 @@ withApp = before $ do
 -- TODO: Need to finish this function!
 wipeDB :: App -> IO ()
 wipeDB app = runDBWithApp app $ do
-  pure ()
+  tables <- getTables
+  sqlBackend <- ask
+  let escapedTables = map (getEscapeRawNameFunction sqlBackend) tables
+      query = "TRUNCATE TABLE " ++ intercalate ", " escapedTables
+  rawExecute query []
 
 getTables :: DB [Text]
 getTables = do
@@ -68,29 +74,25 @@ getTables = do
  being set in test-settings.yaml, which enables dummy authentication in
  Foundation.hs
 -}
-authenticateAs :: Entity User -> YesodExample App ()
-authenticateAs (Entity _ u) = do
+
+-- TODO: Dummy auth is enabled in tests, but I need to figure out how to
+-- authenticate a test user. Check
+-- https://hackage.haskell.org/package/yesod-test-1.6.13/docs/Yesod-Test.html#v:setRequestBody
+authenticateAs :: Entity TwitchUser -> YesodExample App ()
+authenticateAs (Entity _ TwitchUser {..}) = do
   request $ do
     setMethod "POST"
-    addPostParam "ident" $ userIdent u
+    -- TODO: construct a 'Creds' object via 'setRequestBody'
     setUrl $ AuthR $ PluginR "dummy" []
 
 {- | Create a user.  The dummy email entry helps to confirm that foreign-key
  checking is switched off in wipeDB for those database backends which need it.
 -}
-createUser :: Text -> YesodExample App (Entity User)
-createUser ident = runDB $ do
-  user <-
+createUser :: Text -> YesodExample App (Entity TwitchUser)
+createUser ident =
+  runDB $
     insertEntity
-      User
-        { userIdent = ident
-        , userPassword = Nothing
+      TwitchUser
+        { twitchUserIdent = ident
+        , twitchUserLogin = ident
         }
-  _ <-
-    insert
-      Email
-        { emailEmail = ident
-        , emailUserId = Just $ entityKey user
-        , emailVerkey = Nothing
-        }
-  pure user

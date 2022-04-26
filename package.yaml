@@ -21,7 +21,10 @@ dependencies:
 - fast-logger
 - file-embed
 - foreign-store
+- hedgehog
 - hjsmin
+- hspec
+- hspec-hedgehog
 - http-client-tls
 - http-conduit
 - lens

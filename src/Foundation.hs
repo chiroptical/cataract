@@ -18,6 +18,9 @@ import Text.Hamlet (hamletFile)
 import Text.Jasmine (minifym)
 import Yesod.Auth.OAuth2.MyTwitch
 
+-- Used only when in "auth-dummy-login" setting is enabled.
+import Yesod.Auth.Dummy
+
 import Data.Aeson
 import Data.ByteString.Lazy qualified as LBS
 import Data.CaseInsensitive qualified as CI
@@ -344,15 +347,16 @@ instance YesodAuth App where
     --     ["user:read:email"]
     --     twitchSettingsClientId
     --     twitchSettingsClientSecret
-    [ oauth2TwitchScoped
-        "Login via Twitch as streamer (this is not you)"
-        "twitch-streamer"
-        ["user:read:email", "channel:read:subscriptions", "bits:read"]
-        twitchSettingsClientId
-        twitchSettingsClientSecret
-    ]
+    oauth2TwitchScoped
+      "Login via Twitch as streamer (this is not you)"
+      "twitch-streamer"
+      ["user:read:email", "channel:read:subscriptions", "bits:read"]
+      twitchSettingsClientId
+      twitchSettingsClientSecret :
+    extraAuthPlugins
     where
       TwitchSettings {..} = appTwitchSettings $ appSettings app
+      extraAuthPlugins = [authDummy | appAuthDummyLogin $ appSettings app]
 
 -- | Access function to determine if a user is logged in.
 isAuthenticated :: Handler AuthResult

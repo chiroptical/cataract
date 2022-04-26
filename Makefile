@@ -40,4 +40,10 @@ repl: ghci
 ghci: hpack
 	cabal repl
 
-.PHONY: build hpack run docker-build deploy docker-run format-nix format-haskell format ghcid clean hlint repl ghci
+test: hpack
+	cabal test
+
+ghcid-test: hpack
+	ghcid -c 'cabal repl cataract:cataract-test'
+
+.PHONY: build hpack run docker-build deploy docker-run format-nix format-haskell format ghcid clean hlint repl ghci test ghcid-test
