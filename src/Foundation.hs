@@ -26,6 +26,7 @@ import Data.ByteString.Lazy qualified as LBS
 import Data.CaseInsensitive qualified as CI
 import Data.Text.Conversions
 import Data.Text.Encoding qualified as T
+import Encryption (encrypt, runEncryptM)
 import Yesod.Auth.Message
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
@@ -290,6 +291,11 @@ instance YesodAuth App where
         pure $ Authenticated twitchUserId
       else do
         let TwitchSettings {..} = appTwitchSettings
+        -- TODO:
+        -- 1. Encrypt the access and refresh tokens and decode user response
+        -- 2. Check if the user exists
+        -- 3. Upsert or insert the user
+
         liftHandler . runDB $ do
           -- Determine if user already exists in the database and build the
           -- 'TwitchCredentials' record if possible
@@ -298,12 +304,19 @@ instance YesodAuth App where
               mUserResponseBS :: Maybe LBS.ByteString
               mUserResponseBS = unUTF8 . fromText <$> Map.lookup "userResponse" credsExtraMap
               mUserResponse = join $ decode @UserResponse <$> mUserResponseBS
-              -- TODO: accessToken and refreshToken should be encrypted probably
-              mkTwitchCredentials twitchUserId =
-                TwitchCredentials
-                  <$> Map.lookup "accessToken" credsExtraMap
-                  <*> Map.lookup "refreshToken" credsExtraMap
-                  <*> pure twitchUserId
+
+          -- -- TODO: accessToken and refreshToken should be encrypted probably
+          -- mkTwitchCredentials twitchUserId =
+          --   TwitchCredentials
+          --     <$> Map.lookup "accessToken" credsExtraMap
+          --     <*> Map.lookup "refreshToken" credsExtraMap
+          --     <*> pure twitchUserId
+
+          eAccessTokenEncrypt <-
+            case Map.lookup "accessToken" credsExtraMap of
+              Nothing -> pure $ Left _a
+              Just accessToken ->
+                runEncryptM appEncryptionSettings $ encrypt accessToken
 
           -- Determine if any non-streamer user has requested more than the 'user:read:email' scope
           case mUserResponse of

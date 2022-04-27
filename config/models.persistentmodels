@@ -8,8 +8,8 @@ TwitchUser sql=twitch_users
   deriving Typeable
 
 TwitchCredentials
-  accessToken Text
-  refreshToken Text
+  accessToken EncryptedText
+  refreshToken EncryptedText
   twitchUserId TwitchUserId
   -- TODO: twitchUserName Text
   UniqueTwitchUserId twitchUserId

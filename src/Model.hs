@@ -15,6 +15,7 @@
 module Model where
 
 import ClassyPrelude.Yesod
+import Data.Encrypt (EncryptedText)
 import Data.EventKind
 import Database.Persist.Quasi
 import Text.Blaze (ToMarkup (..))
