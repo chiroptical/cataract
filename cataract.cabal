@@ -194,6 +194,7 @@ test-suite cataract-test
   type: exitcode-stdio-1.0
   main-is: Spec.hs
   other-modules:
+      Data.EncryptSpec
       Handler.CommonSpec
       Handler.HomeSpec
       Handler.ProfileSpec

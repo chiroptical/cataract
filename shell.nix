@@ -23,6 +23,11 @@ pkgs.mkShell {
     nodejs
     esbuild
     nodePackages.npm
+
+    # required for 'make test' hedgehog output
+    glibcLocales
   ];
   withHoogle = true;
+  # required for 'make test' hedgehog output
+  LANG = "en_US.utf8";
 }
