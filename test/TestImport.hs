@@ -47,7 +47,6 @@ withApp = before $ do
   logWare <- liftIO $ makeLogWare foundation
   pure (foundation, logWare)
 
--- TODO: Need to finish this function!
 wipeDB :: App -> IO ()
 wipeDB app = runDBWithApp app $ do
   tables <- getTables
@@ -74,25 +73,9 @@ getTables = do
  being set in test-settings.yaml, which enables dummy authentication in
  Foundation.hs
 -}
-
--- TODO: Dummy auth is enabled in tests, but I need to figure out how to
--- authenticate a test user. Check
--- https://hackage.haskell.org/package/yesod-test-1.6.13/docs/Yesod-Test.html#v:setRequestBody
-authenticateAs :: Entity TwitchUser -> YesodExample App ()
-authenticateAs (Entity _ TwitchUser {..}) = do
+authenticateAs :: Text -> YesodExample App ()
+authenticateAs userIdent = do
   request $ do
     setMethod "POST"
-    -- TODO: construct a 'Creds' object via 'setRequestBody'
+    addPostParam "ident" userIdent
     setUrl $ AuthR $ PluginR "dummy" []
-
-{- | Create a user.  The dummy email entry helps to confirm that foreign-key
- checking is switched off in wipeDB for those database backends which need it.
--}
-createUser :: Text -> YesodExample App (Entity TwitchUser)
-createUser ident =
-  runDB $
-    insertEntity
-      TwitchUser
-        { twitchUserIdent = ident
-        , twitchUserLogin = ident
-        }

@@ -123,7 +123,7 @@ makeApplication foundation = do
   logWare <- makeLogWare foundation
   -- Create the WAI application and apply middlewares
   appPlain <- toWaiAppPlain foundation
-  putStrLn $ tshow appDevelopment
+  putStrLn $ "Development mode: " <> tshow appDevelopment
   let middlewares =
         logWare
           . defaultMiddlewaresNoLogging

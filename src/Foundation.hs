@@ -281,61 +281,71 @@ instance YesodAuth App where
     Creds App ->
     m (AuthenticationResult App)
   authenticate Creds {..} = do
-    TwitchSettings {..} <- appTwitchSettings <$> getsYesod appSettings
-    liftHandler . runDB $ do
-      -- Determine if user already exists in the database and build the
-      -- 'TwitchCredentials' record if possible
-      mTwitchUserIdent <- getBy $ UniqueTwitchUser credsIdent
-      let credsExtraMap = Map.fromList credsExtra
-          mUserResponseBS :: Maybe LBS.ByteString
-          mUserResponseBS = unUTF8 . fromText <$> Map.lookup "userResponse" credsExtraMap
-          mUserResponse = join $ decode @UserResponse <$> mUserResponseBS
-          -- TODO: accessToken and refreshToken should be encrypted probably
-          mkTwitchCredentials twitchUserId =
-            TwitchCredentials
-              <$> Map.lookup "accessToken" credsExtraMap
-              <*> Map.lookup "refreshToken" credsExtraMap
-              <*> pure twitchUserId
+    AppSettings {..} <- getsYesod appSettings
+    if appAuthDummyLogin && credsPlugin == "dummy"
+      then do
+        twitchUserId <-
+          liftHandler . runDB $
+            insert TwitchUser {twitchUserIdent = credsIdent, twitchUserLogin = "dummy"}
+        pure $ Authenticated twitchUserId
+      else do
+        let TwitchSettings {..} = appTwitchSettings
+        liftHandler . runDB $ do
+          -- Determine if user already exists in the database and build the
+          -- 'TwitchCredentials' record if possible
+          mTwitchUserIdent <- getBy $ UniqueTwitchUser credsIdent
+          let credsExtraMap = Map.fromList credsExtra
+              mUserResponseBS :: Maybe LBS.ByteString
+              mUserResponseBS = unUTF8 . fromText <$> Map.lookup "userResponse" credsExtraMap
+              mUserResponse = join $ decode @UserResponse <$> mUserResponseBS
+              -- TODO: accessToken and refreshToken should be encrypted probably
+              mkTwitchCredentials twitchUserId =
+                TwitchCredentials
+                  <$> Map.lookup "accessToken" credsExtraMap
+                  <*> Map.lookup "refreshToken" credsExtraMap
+                  <*> pure twitchUserId
 
-      -- Determine if any non-streamer user has requested more than the 'user:read:email' scope
-      case mUserResponse of
-        Nothing -> pure $ ServerError "Unable to decode user response from Twitch"
-        Just UserResponse {..} -> do
-          if credsIdent /= twitchSettingsStreamerId && userResponseScopes /= ["user:read:email"]
-            then pure . UserError $ IdentifierNotFound "Log in as user"
-            else case mTwitchUserIdent of
-              -- If the user exists,
-              -- - update the Twitch login name
-              -- - update the Twitch credentials
-              Just (Entity uid _) -> do
-                let mTwitchUserLogin = Map.lookup "login" credsExtraMap
-                forM_ (mkTwitchCredentials uid) $ \tc@TwitchCredentials {..} -> do
-                  case mTwitchUserLogin of
-                    Nothing -> pure ()
-                    Just twitchUserLogin -> void $ updateGet uid [TwitchUserLogin =. twitchUserLogin]
-                  void $
-                    upsert
-                      tc
-                      [ TwitchCredentialsAccessToken =. twitchCredentialsAccessToken
-                      , TwitchCredentialsRefreshToken =. twitchCredentialsRefreshToken
-                      ]
-                pure $ Authenticated uid
-              -- If the user doesn't exist,
-              -- - insert the 'TwitchUser' entity
-              -- - insert the 'TwitchCredential' entity
-              Nothing -> do
-                let mTwitchUserLogin = Map.lookup "login" credsExtraMap
-                case mTwitchUserLogin of
-                  Nothing -> pure $ ServerError "Unable to determine Twitch login handle"
-                  Just twitchUserLogin -> do
-                    twitchUserId <-
-                      insert
-                        TwitchUser
-                          { twitchUserIdent = credsIdent
-                          , twitchUserLogin = twitchUserLogin
-                          }
-                    forM_ (mkTwitchCredentials twitchUserId) insert_
-                    pure $ Authenticated twitchUserId
+          -- Determine if any non-streamer user has requested more than the 'user:read:email' scope
+          case mUserResponse of
+            Nothing -> pure $ ServerError "Unable to decode user response from Twitch"
+            Just UserResponse {..} -> do
+              if credsIdent /= twitchSettingsStreamerId && userResponseScopes /= ["user:read:email"]
+                then pure . UserError $ IdentifierNotFound "Log in as user"
+                else case mTwitchUserIdent of
+                  -- If the user exists,
+                  -- - update the Twitch login name
+                  -- - update the Twitch credentials
+                  Just (Entity uid _) -> do
+                    let mTwitchUserLogin = Map.lookup "login" credsExtraMap
+                    forM_ (mkTwitchCredentials uid) $ \tc@TwitchCredentials {..} -> do
+                      case mTwitchUserLogin of
+                        Nothing -> pure ()
+                        Just twitchUserLogin ->
+                          void $
+                            updateGet uid [TwitchUserLogin =. twitchUserLogin]
+                      void $
+                        upsert
+                          tc
+                          [ TwitchCredentialsAccessToken =. twitchCredentialsAccessToken
+                          , TwitchCredentialsRefreshToken =. twitchCredentialsRefreshToken
+                          ]
+                    pure $ Authenticated uid
+                  -- If the user doesn't exist,
+                  -- - insert the 'TwitchUser' entity
+                  -- - insert the 'TwitchCredential' entity
+                  Nothing -> do
+                    let mTwitchUserLogin = Map.lookup "login" credsExtraMap
+                    case mTwitchUserLogin of
+                      Nothing -> pure $ ServerError "Unable to determine Twitch login handle"
+                      Just twitchUserLogin -> do
+                        twitchUserId <-
+                          insert
+                            TwitchUser
+                              { twitchUserIdent = credsIdent
+                              , twitchUserLogin = twitchUserLogin
+                              }
+                        forM_ (mkTwitchCredentials twitchUserId) insert_
+                        pure $ Authenticated twitchUserId
 
   -- You can add other plugins like Google Email, email or OAuth here
   authPlugins :: App -> [AuthPlugin App]

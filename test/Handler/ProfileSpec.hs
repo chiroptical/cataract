@@ -13,16 +13,12 @@ spec = withApp $ do
       statusIs 403
 
     it "asserts access to my-account for authenticated users" $ do
-      -- TODO: Get this from the application environment
-      userEntity <- createUser "131787842"
-      authenticateAs userEntity
+      authenticateAs "12345"
       get ProfileR
       statusIs 200
 
--- it "asserts user's information is shown" $ do
---   userEntity <- createUser "bar"
---   authenticateAs userEntity
---
---   get ProfileR
---   let (Entity _ user) = userEntity
---   htmlAnyContain ".username" . unpack $ twitchUserIdent user
+    it "asserts user's information is shown" $ do
+      let userIdent = "12345"
+      authenticateAs userIdent
+      get ProfileR
+      htmlAnyContain ".username" . unpack $ userIdent
