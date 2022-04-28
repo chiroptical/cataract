@@ -21,6 +21,7 @@ library
       Data.Message
       Data.Twitch
       Data.Twitch.Webhook
+      Encryption
       Foundation
       Handler.Common
       Handler.Home
