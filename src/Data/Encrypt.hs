@@ -33,6 +33,7 @@ data EncryptionFailure
   | UnableToDecodeSecretKeyFromEnvironment
   | UnableToEncryptMessage CryptoError
   | UnableToDecryptMessage CryptoError
+  | UnableToEncrypt Text
   deriving (Show)
 
 type EncryptM m a = ExceptT EncryptionFailure m a

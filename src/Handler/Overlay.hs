@@ -6,6 +6,7 @@
 module Handler.Overlay where
 
 import Database.Esqueleto.Experimental qualified as Db
+import Encryption (decryptText, runEncryptM)
 import Import
 import Request.Twitch (
   AccessToken (..),
@@ -32,17 +33,10 @@ emptyLayout w = do
             ^{pageBody p}
         |]
 
-{- | Documentation
-
- - svg.js: https://svgjs.dev/docs/3.1
-
- | Next
-
- - Set up the EventSource handler in JS and start sending messages
--}
 getOverlayR :: Handler Html
 getOverlayR = do
-  TwitchSettings {..} <- appTwitchSettings <$> getsYesod appSettings
+  AppSettings {..} <- getsYesod appSettings
+  let TwitchSettings {..} = appTwitchSettings
   -- The overlay is powered by streamer's Twitch credentials
   -- If they aren't present we can't display anything
   mTwitchCredentials <- runDB . Db.selectOne $ queryCredentialsFromIdent twitchSettingsStreamerId
@@ -51,16 +45,29 @@ getOverlayR = do
       (sendStatusJSON status401 ("streamer must log in" :: Text))
       pure
       mTwitchCredentials
-  let accessToken = AccessToken twitchCredentialsAccessToken
-  -- Get the follower and subscriber count for the initial overlay content
-  (followerCount, subscriberCount) :: (Text, Text) <- do
-    let followersRequest = Followers twitchSettingsStreamerId
-    eFollowerResponse <- twitchRequest followersRequest twitchSettingsClientId accessToken FollowersPayload
-    let subscriberRequest = Subscribers twitchSettingsStreamerId
-    eSubscriberResponse <- twitchRequest subscriberRequest twitchSettingsClientId accessToken SubscribersPayload
-    case (eFollowerResponse, eSubscriberResponse) of
-      (Right (FollowersResponse x), Right (SubscribersResponse y)) -> pure (tshow x, tshow y)
-      _ -> pure ("No response", "from Twitch")
-  emptyLayout $ do
-    setTitle "Overlay"
-    $(widgetFile "overlay")
+  eAccessToken <- liftIO $ runEncryptM appEncryptionSettings $ decryptText twitchCredentialsAccessToken
+  case eAccessToken of
+    Left _ -> sendStatusJSON status401 ("Unable to retrieve access token" :: Text)
+    Right accessToken -> do
+      -- Get the follower and subscriber count for the initial overlay content
+      (followerCount, subscriberCount) :: (Text, Text) <- do
+        let followersRequest = Followers twitchSettingsStreamerId
+        eFollowerResponse <-
+          twitchRequest
+            followersRequest
+            twitchSettingsClientId
+            (AccessToken accessToken)
+            FollowersPayload
+        let subscriberRequest = Subscribers twitchSettingsStreamerId
+        eSubscriberResponse <-
+          twitchRequest
+            subscriberRequest
+            twitchSettingsClientId
+            (AccessToken accessToken)
+            SubscribersPayload
+        case (eFollowerResponse, eSubscriberResponse) of
+          (Right (FollowersResponse x), Right (SubscribersResponse y)) -> pure (tshow x, tshow y)
+          _ -> pure ("No response", "from Twitch")
+      emptyLayout $ do
+        setTitle "Overlay"
+        $(widgetFile "overlay")

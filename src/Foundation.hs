@@ -24,9 +24,10 @@ import Yesod.Auth.Dummy
 import Data.Aeson
 import Data.ByteString.Lazy qualified as LBS
 import Data.CaseInsensitive qualified as CI
+import Data.Encrypt (EncryptionFailure (UnableToEncrypt))
 import Data.Text.Conversions
 import Data.Text.Encoding qualified as T
-import Encryption (encrypt, runEncryptM)
+import Encryption (encryptText, runEncryptM)
 import Yesod.Auth.Message
 import Yesod.Core.Types (Logger)
 import Yesod.Core.Unsafe qualified as Unsafe
@@ -282,6 +283,7 @@ instance YesodAuth App where
     Creds App ->
     m (AuthenticationResult App)
   authenticate Creds {..} = do
+    -- TODO: Move some of this logic out of 'authenticate' so it is testable
     AppSettings {..} <- getsYesod appSettings
     if appAuthDummyLogin && credsPlugin == "dummy"
       then do
@@ -291,74 +293,69 @@ instance YesodAuth App where
         pure $ Authenticated twitchUserId
       else do
         let TwitchSettings {..} = appTwitchSettings
-        -- TODO:
-        -- 1. Encrypt the access and refresh tokens and decode user response
-        -- 2. Check if the user exists
-        -- 3. Upsert or insert the user
+            credsExtraMap = Map.fromList credsExtra
+            mUserResponseBS :: Maybe LBS.ByteString
+            mUserResponseBS = unUTF8 . fromText <$> Map.lookup "userResponse" credsExtraMap
+            mUserResponse = join $ decode @UserResponse <$> mUserResponseBS
+            mTwitchUserLogin = Map.lookup "login" credsExtraMap
 
-        liftHandler . runDB $ do
-          -- Determine if user already exists in the database and build the
-          -- 'TwitchCredentials' record if possible
-          mTwitchUserIdent <- getBy $ UniqueTwitchUser credsIdent
-          let credsExtraMap = Map.fromList credsExtra
-              mUserResponseBS :: Maybe LBS.ByteString
-              mUserResponseBS = unUTF8 . fromText <$> Map.lookup "userResponse" credsExtraMap
-              mUserResponse = join $ decode @UserResponse <$> mUserResponseBS
-
-          -- -- TODO: accessToken and refreshToken should be encrypted probably
-          -- mkTwitchCredentials twitchUserId =
-          --   TwitchCredentials
-          --     <$> Map.lookup "accessToken" credsExtraMap
-          --     <*> Map.lookup "refreshToken" credsExtraMap
-          --     <*> pure twitchUserId
-
-          eAccessTokenEncrypt <-
-            case Map.lookup "accessToken" credsExtraMap of
-              Nothing -> pure $ Left _a
-              Just accessToken ->
-                runEncryptM appEncryptionSettings $ encrypt accessToken
-
-          -- Determine if any non-streamer user has requested more than the 'user:read:email' scope
-          case mUserResponse of
-            Nothing -> pure $ ServerError "Unable to decode user response from Twitch"
-            Just UserResponse {..} -> do
-              if credsIdent /= twitchSettingsStreamerId && userResponseScopes /= ["user:read:email"]
-                then pure . UserError $ IdentifierNotFound "Log in as user"
-                else case mTwitchUserIdent of
-                  -- If the user exists,
-                  -- - update the Twitch login name
-                  -- - update the Twitch credentials
-                  Just (Entity uid _) -> do
-                    let mTwitchUserLogin = Map.lookup "login" credsExtraMap
-                    forM_ (mkTwitchCredentials uid) $ \tc@TwitchCredentials {..} -> do
-                      case mTwitchUserLogin of
-                        Nothing -> pure ()
-                        Just twitchUserLogin ->
-                          void $
-                            updateGet uid [TwitchUserLogin =. twitchUserLogin]
-                      void $
+        eAccessTokenEncrypted <-
+          case Map.lookup "accessToken" credsExtraMap of
+            Nothing -> pure . Left $ UnableToEncrypt "No access token"
+            Just accessToken ->
+              liftIO $ runEncryptM appEncryptionSettings $ encryptText accessToken
+        eRefreshTokenEncrypted <-
+          case Map.lookup "refreshToken" credsExtraMap of
+            Nothing -> pure . Left $ UnableToEncrypt "No refresh token"
+            Just accessToken ->
+              liftIO $ runEncryptM appEncryptionSettings $ encryptText accessToken
+        case (eAccessTokenEncrypted, eRefreshTokenEncrypted) of
+          (Right accessTokenEncrypted, Right refreshTokenEncrypted) -> liftHandler $ do
+            -- Determine if user already exists in the database and build the
+            -- 'TwitchCredentials' record if possible
+            mTwitchUserIdent <- runDB $ getBy $ UniqueTwitchUser credsIdent
+            let twitchCredentials userId =
+                  TwitchCredentials
+                    { twitchCredentialsAccessToken = accessTokenEncrypted
+                    , twitchCredentialsRefreshToken = refreshTokenEncrypted
+                    , twitchCredentialsTwitchUserId = userId
+                    }
+            -- 'mUserResponse' contains scopes, only streamer should have elevated scopes
+            case mUserResponse of
+              Nothing -> pure $ ServerError "Unable to decode user response from Twitch"
+              Just UserResponse {..} -> do
+                if credsIdent /= twitchSettingsStreamerId && userResponseScopes /= ["user:read:email"]
+                  then pure . UserError $ IdentifierNotFound "Log in as user"
+                  else case mTwitchUserIdent of
+                    -- If the user exists,
+                    -- - update the Twitch login name
+                    -- - update the Twitch credentials
+                    Just (Entity uid _) -> do
+                      runDB . void $ do
+                        forM_ mTwitchUserLogin $ \twitchUserLogin ->
+                          void $ updateGet uid [TwitchUserLogin =. twitchUserLogin]
                         upsert
-                          tc
-                          [ TwitchCredentialsAccessToken =. twitchCredentialsAccessToken
-                          , TwitchCredentialsRefreshToken =. twitchCredentialsRefreshToken
+                          (twitchCredentials uid)
+                          [ TwitchCredentialsAccessToken =. accessTokenEncrypted
+                          , TwitchCredentialsRefreshToken =. refreshTokenEncrypted
                           ]
-                    pure $ Authenticated uid
-                  -- If the user doesn't exist,
-                  -- - insert the 'TwitchUser' entity
-                  -- - insert the 'TwitchCredential' entity
-                  Nothing -> do
-                    let mTwitchUserLogin = Map.lookup "login" credsExtraMap
-                    case mTwitchUserLogin of
-                      Nothing -> pure $ ServerError "Unable to determine Twitch login handle"
-                      Just twitchUserLogin -> do
-                        twitchUserId <-
-                          insert
-                            TwitchUser
-                              { twitchUserIdent = credsIdent
-                              , twitchUserLogin = twitchUserLogin
-                              }
-                        forM_ (mkTwitchCredentials twitchUserId) insert_
-                        pure $ Authenticated twitchUserId
+                      pure $ Authenticated uid
+                    -- If the user doesn't exist,
+                    -- - insert the 'TwitchUser' entity
+                    -- - insert the 'TwitchCredential' entity
+                    Nothing -> do
+                      case mTwitchUserLogin of
+                        Nothing -> pure $ ServerError "Unable to determine Twitch login handle"
+                        Just twitchUserLogin -> runDB $ do
+                          twitchUserId <-
+                            insert
+                              TwitchUser
+                                { twitchUserIdent = credsIdent
+                                , twitchUserLogin = twitchUserLogin
+                                }
+                          insert_ (twitchCredentials twitchUserId)
+                          pure $ Authenticated twitchUserId
+          _ -> pure $ ServerError "Unable to encrypt tokens"
 
   -- You can add other plugins like Google Email, email or OAuth here
   authPlugins :: App -> [AuthPlugin App]

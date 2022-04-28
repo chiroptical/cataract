@@ -2,7 +2,7 @@ module Data.EncryptSpec (spec) where
 
 import TestImport
 
-import Data.Encrypt
+import Encryption
 import Hedgehog (evalEither)
 import Hedgehog.Gen qualified as Gen
 import Hedgehog.Range qualified as Range
