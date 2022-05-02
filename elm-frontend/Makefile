@@ -1,7 +1,7 @@
-run:
-	elm reactor
-
 build:
-	elm make --optimize --output dist/elm.js src/Main.elm
+	node esbuild.config.js
 
-.PHONY: run build
+format:
+	elm-format --yes src/
+
+.PHONY: build format
