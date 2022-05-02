@@ -29,5 +29,3 @@ cabal.project.local
 
 .envrc
 .direnv/
-
-elm-frontend/

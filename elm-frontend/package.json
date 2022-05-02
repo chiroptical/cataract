@@ -1,0 +1,16 @@
+{
+  "name": "cataract-elm",
+  "version": "1.0.0",
+  "description": "",
+  "type": "module",
+  "main": "index.js",
+  "scripts": {
+    "watch": "..."
+  },
+  "author": "",
+  "license": "",
+  "devDependencies": {
+    "esbuild-plugin-elm": "^0.0.8",
+    "esbuild-serve": "^1.0.1"
+  }
+}
