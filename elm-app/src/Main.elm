@@ -8,29 +8,62 @@ import Browser
 import Browser.Dom as Dom
 import Canvas exposing (..)
 import Canvas.Settings as Canvas exposing (..)
+import Canvas.Settings.Advanced as Canvas exposing (..)
+import Canvas.Settings.Text as Canvas exposing (..)
+import Canvas.Texture as Texture
 import Color
 import Css exposing (..)
 import Html.Styled exposing (..)
-import Html.Styled.Attributes exposing (css)
-import Svg.Snail exposing (snail)
-import Tailwind.Utilities as Tw
 import Task
 
 
-view : Model -> Html Msg
-view _ =
-    let
-        width =
-            1920
+drawTextAt : Point -> String -> Renderable
+drawTextAt pos txt =
+    Canvas.text
+        [ font { size = 48, family = "sans-serif" }, Canvas.fill Color.purple ]
+        pos
+        txt
 
-        height =
-            1080
-    in
-    Canvas.toHtml ( width, height )
+
+drawScaledTexture : Texture.Texture -> Float -> Point -> Renderable
+drawScaledTexture texture scale ( x, y ) =
+    Canvas.texture
+        [ Canvas.transform [ Canvas.scale scale scale ] ]
+        ( x / scale, y / scale )
+        texture
+
+
+view : Model -> Html Msg
+view model =
+    Canvas.toHtmlWith
+        { width = 1920
+        , height = 1080
+        , textures =
+            [ Texture.loadFromImageUrl "./snail.png"
+                (\mTexture ->
+                    case mTexture of
+                        Just texture ->
+                            SnailTextureLoaded texture
+
+                        Nothing ->
+                            NoOp
+                )
+            ]
+        }
         []
-        [ shapes [ Canvas.fill Color.white ] [ rect ( 0, 0 ) 50 50 ]
-        , shapes [ Canvas.fill Color.red ] [ rect ( 50, 50 ) 100 100 ]
-        ]
+        ([ shapes [ Canvas.fill Color.white ] [ rect ( 0, 0 ) 50 50 ]
+         , shapes [ Canvas.fill Color.red ] [ rect ( 50, 50 ) 100 100 ]
+         , drawTextAt ( 300, 300 ) "Hello, world..."
+         ]
+            ++ (case model.snailTexture of
+                    Just texture ->
+                        [ drawScaledTexture texture 0.05 ( 400, 400 )
+                        ]
+
+                    Nothing ->
+                        []
+               )
+        )
         |> fromUnstyled
 
 
@@ -86,12 +119,18 @@ main =
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
-update _ model =
-    ( model, Cmd.none )
+update msg model =
+    case msg of
+        NoOp ->
+            ( model, Cmd.none )
+
+        SnailTextureLoaded texture ->
+            ( { model | snailTexture = Just texture }, Cmd.none )
 
 
 type Msg
     = NoOp
+    | SnailTextureLoaded Texture.Texture
 
 
 setViewport : Cmd Msg
@@ -100,7 +139,8 @@ setViewport =
 
 
 type alias Model =
-    ()
+    { snailTexture : Maybe Texture.Texture
+    }
 
 
 
@@ -109,7 +149,7 @@ type alias Model =
 
 initialModel : () -> ( Model, Cmd Msg )
 initialModel _ =
-    ( (), setViewport )
+    ( { snailTexture = Nothing }, setViewport )
 
 
 subscriptions : Model -> Sub Msg
