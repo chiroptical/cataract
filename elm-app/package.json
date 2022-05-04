@@ -1,7 +1,7 @@
 {
-  "name": "vite-elm-template",
-  "author": "Lindsay Wardell",
-  "description": "A staring template for building Elm apps with Vite",
+  "name": "cataract",
+  "author": "Barry Moore II",
+  "description": "A Twitch overlay",
   "version": "1.2.0",
   "license": "MIT",
   "scripts": {

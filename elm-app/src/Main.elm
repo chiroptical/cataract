@@ -1,111 +1,79 @@
 module Main exposing (main)
 
--- import Html.Styled.Events exposing (onClick)
 -- import Svg.Styled as StyledSvg
 -- import Svg.Styled.Attributes as SvgAttribs
 
+import Animator
+import Animator.Inline
 import Browser
 import Browser.Dom as Dom
-import Canvas exposing (..)
-import Canvas.Settings as Canvas exposing (..)
-import Canvas.Settings.Advanced as Canvas exposing (..)
-import Canvas.Settings.Text as Canvas exposing (..)
-import Canvas.Texture as Texture
-import Color
 import Css exposing (..)
 import Html.Styled exposing (..)
+import Html.Styled.Attributes as Attributes exposing (css)
+import Html.Styled.Events exposing (onClick)
+import Tailwind.Utilities as Tw
 import Task
-
-
-drawTextAt : Point -> String -> Renderable
-drawTextAt pos txt =
-    Canvas.text
-        [ font { size = 48, family = "sans-serif" }, Canvas.fill Color.purple ]
-        pos
-        txt
-
-
-drawScaledTexture : Texture.Texture -> Float -> Point -> Renderable
-drawScaledTexture texture scale ( x, y ) =
-    Canvas.texture
-        [ Canvas.transform [ Canvas.scale scale scale ] ]
-        ( x / scale, y / scale )
-        texture
+import Time
 
 
 view : Model -> Html Msg
 view model =
-    Canvas.toHtmlWith
-        { width = 1920
-        , height = 1080
-        , textures =
-            [ Texture.loadFromImageUrl "./snail.png"
-                (\mTexture ->
-                    case mTexture of
-                        Just texture ->
-                            SnailTextureLoaded texture
-
-                        Nothing ->
-                            NoOp
-                )
+    div
+        [ css
+            [ width (px 1920)
+            , height (px 1080)
             ]
-        }
-        []
-        ([ shapes [ Canvas.fill Color.white ] [ rect ( 0, 0 ) 50 50 ]
-         , shapes [ Canvas.fill Color.red ] [ rect ( 50, 50 ) 100 100 ]
-         , drawTextAt ( 300, 300 ) "Hello, world..."
-         ]
-            ++ (case model.snailTexture of
-                    Just texture ->
-                        [ drawScaledTexture texture 0.05 ( 400, 400 )
-                        ]
+        ]
+        [ div
+            [ css
+                [ Tw.text_7xl
+                , Tw.text_purple_900
+                , position absolute
+                , top (px 100)
+                , left (px 100)
+                ]
+            ]
+            [ text "Followers 12" ]
+        , div
+            [ css
+                [ Tw.text_7xl
+                , Tw.text_purple_900
+                , position absolute
+                , top (px 200)
+                , left (px 200)
+                ]
+            , Attributes.fromUnstyled <|
+                Animator.Inline.opacity model.textAnimate <|
+                    \state ->
+                        if state then
+                            Animator.at 1
 
-                    Nothing ->
-                        []
-               )
-        )
-        |> fromUnstyled
+                        else
+                            Animator.at 0
+            ]
+            [ text "Subscriber 1234"
+            ]
+        , div
+            [ onClick (AnimateText (not (Animator.current model.textAnimate)))
+            ]
+            [ button
+                [ css
+                    [ Tw.rounded_full
+                    ]
+                ]
+                [ text "animate" ]
+            ]
 
-
-
--- view : Model -> Html Msg
--- view _ =
---     div
---         [ css
---             [ width (px 1920)
---             , height (px 1080)
---             ]
---         ]
---         [ div
---             [ css
---                 [ Tw.text_7xl
---                 , Tw.text_purple_900
---                 , position absolute
---                 , top (px 1800)
---                 , left (px 800)
---                 ]
---             ]
---             [ text "Followers 12" ]
---         , div
---             [ css
---                 [ Tw.text_7xl
---                 , Tw.text_purple_900
---                 , position absolute
---                 , top (px 1400)
---                 , left (px 400)
---                 ]
---             ]
---             [ text "Subscriber 1234" ]
---         , div
---             [ css
---                 [ position absolute
---                 , top (px 1000)
---                 , left (px 200)
---                 , transform (scale 0.5)
---                 ]
---             ]
---             [ snail ]
---         ]
+        -- , div
+        --     [ css
+        --         [ position absolute
+        --         , top (px 1000)
+        --         , left (px 200)
+        --         , transform (scale 0.5)
+        --         ]
+        --     ]
+        --     [ snail ]
+        ]
 
 
 main : Program () Model Msg
@@ -124,13 +92,26 @@ update msg model =
         NoOp ->
             ( model, Cmd.none )
 
-        SnailTextureLoaded texture ->
-            ( { model | snailTexture = Just texture }, Cmd.none )
+        Tick newTime ->
+            ( model
+                |> Animator.update newTime animator
+            , Cmd.none
+            )
+
+        AnimateText new ->
+            ( { model
+                | textAnimate =
+                    model.textAnimate
+                        |> Animator.go (Animator.millis 2000) new
+              }
+            , Cmd.none
+            )
 
 
 type Msg
     = NoOp
-    | SnailTextureLoaded Texture.Texture
+    | Tick Time.Posix
+    | AnimateText Bool
 
 
 setViewport : Cmd Msg
@@ -139,19 +120,29 @@ setViewport =
 
 
 type alias Model =
-    { snailTexture : Maybe Texture.Texture
+    { textAnimate : Animator.Timeline Bool
     }
 
 
-
--- First argument is flags
+animator : Animator.Animator Model
+animator =
+    Animator.animator
+        |> Animator.watching
+            .textAnimate
+            (\new model ->
+                { model | textAnimate = new }
+            )
 
 
 initialModel : () -> ( Model, Cmd Msg )
 initialModel _ =
-    ( { snailTexture = Nothing }, setViewport )
+    ( { textAnimate = Animator.init False
+      }
+    , setViewport
+    )
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.none
+subscriptions model =
+    animator
+        |> Animator.toSubscription Tick model
