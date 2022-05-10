@@ -45,6 +45,7 @@ dependencies:
 - uuid
 - vector
 - wai
+- wai-cors
 - wai-extra
 - wai-logger
 - warp

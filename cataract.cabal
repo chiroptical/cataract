@@ -102,6 +102,7 @@ library
     , uuid
     , vector
     , wai
+    , wai-cors
     , wai-extra
     , wai-logger
     , warp
@@ -177,6 +178,7 @@ executable cataract
     , uuid
     , vector
     , wai
+    , wai-cors
     , wai-extra
     , wai-logger
     , warp
@@ -257,6 +259,7 @@ test-suite cataract-test
     , uuid
     , vector
     , wai
+    , wai-cors
     , wai-extra
     , wai-logger
     , warp

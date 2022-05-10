@@ -54,7 +54,7 @@ view model =
             [ text "Subscriber 1234"
             ]
         , div
-            [ onClick (AnimateText (not (Animator.current model.textAnimate)))
+            [ onClick AnimateText
             ]
             [ button
                 [ css
@@ -98,11 +98,14 @@ update msg model =
             , Cmd.none
             )
 
-        AnimateText new ->
+        AnimateText ->
             ( { model
                 | textAnimate =
                     model.textAnimate
-                        |> Animator.go (Animator.millis 2000) new
+                        |> Animator.queue
+                            [ Animator.event (Animator.millis 2000) True
+                            , Animator.event (Animator.millis 2000) False
+                            ]
               }
             , Cmd.none
             )
@@ -111,7 +114,7 @@ update msg model =
 type Msg
     = NoOp
     | Tick Time.Posix
-    | AnimateText Bool
+    | AnimateText
 
 
 setViewport : Cmd Msg

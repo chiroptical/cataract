@@ -69,6 +69,7 @@ import Handler.ServerSentEvents
 import Handler.Twitch.Followers
 import Handler.Twitch.Subscribers
 import Handler.Twitch.Webhook
+import Network.Wai.Middleware.Cors
 import Network.Wai.Middleware.ForceSSL (forceSSL)
 
 -- This line actually creates our YesodDispatch instance. It is the second half
@@ -128,7 +129,12 @@ makeApplication foundation = do
         logWare
           . defaultMiddlewaresNoLogging
           . if appDevelopment
-            then id
+            then -- TODO: Should we use this always?
+
+              cors
+                ( const . Just $
+                    simpleCorsResourcePolicy {corsOrigins = Just (["http://localhost:3001"], True)}
+                )
             else forceSSL
   pure $ middlewares appPlain
 
