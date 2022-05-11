@@ -1,4 +1,4 @@
-module Main exposing (main)
+port module Main exposing (main)
 
 -- import Svg.Styled as StyledSvg
 -- import Svg.Styled.Attributes as SvgAttribs
@@ -11,9 +11,63 @@ import Css exposing (..)
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attributes exposing (css)
 import Html.Styled.Events exposing (onClick)
+import Json.Decode as Decode
+import Platform.Sub as Sub
 import Tailwind.Utilities as Tw
 import Task
 import Time
+
+
+
+-- PORTS
+
+
+port sseOpenReceiver : (() -> msg) -> Sub msg
+
+
+port sseErrorReceiver : (String -> msg) -> Sub msg
+
+
+port sseMessageReceiver : (String -> msg) -> Sub msg
+
+
+
+-- JSON
+
+
+type alias Kind =
+    { kind : String
+    }
+
+
+kindDecoder : String -> Decode.Decoder Kind
+kindDecoder match =
+    Decode.field "kind" Decode.string
+        |> Decode.andThen
+            (\str ->
+                if match == str then
+                    Decode.succeed (Kind str)
+
+                else
+                    Decode.fail ("invalid kind, got: " ++ str ++ " wanted: " ++ match)
+            )
+
+
+
+-- TODO: Sum type that stores that associates a kind to its' data
+
+
+type ServerSentEventData
+    = PingMessageData PingMessage
+
+
+type alias PingMessage =
+    {}
+
+
+pingMessageDecoder : Decode.Decoder PingMessage
+pingMessageDecoder =
+    Decode.map (\_ -> PingMessage) (kindDecoder "ping")
 
 
 view : Model -> Html Msg
@@ -34,6 +88,16 @@ view model =
                 ]
             ]
             [ text "Followers 12" ]
+        , div
+            [ css
+                [ Tw.text_7xl
+                , Tw.text_purple_900
+                , position absolute
+                , top (px 300)
+                , left (px 300)
+                ]
+            ]
+            [ text model.decodeResult ]
         , div
             [ css
                 [ Tw.text_7xl
@@ -110,11 +174,32 @@ update msg model =
             , Cmd.none
             )
 
+        ServerSentEventOpen ->
+            ( model
+            , Cmd.none
+            )
+
+        ServerSentEventError _ ->
+            ( model
+            , Cmd.none
+            )
+
+        ServerSentEventMessage result ->
+            case result of
+                Ok _ ->
+                    ( { model | decodeResult = "It worked!" }, Cmd.none )
+
+                Err _ ->
+                    ( { model | decodeResult = "It didn't work!" }, Cmd.none )
+
 
 type Msg
     = NoOp
     | Tick Time.Posix
     | AnimateText
+    | ServerSentEventOpen
+    | ServerSentEventError String
+    | ServerSentEventMessage (Result Decode.Error PingMessage)
 
 
 setViewport : Cmd Msg
@@ -124,6 +209,7 @@ setViewport =
 
 type alias Model =
     { textAnimate : Animator.Timeline Bool
+    , decodeResult : String
     }
 
 
@@ -140,6 +226,7 @@ animator =
 initialModel : () -> ( Model, Cmd Msg )
 initialModel _ =
     ( { textAnimate = Animator.init False
+      , decodeResult = ""
       }
     , setViewport
     )
@@ -147,5 +234,10 @@ initialModel _ =
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    animator
-        |> Animator.toSubscription Tick model
+    Sub.batch
+        [ animator
+            |> Animator.toSubscription Tick model
+        , sseOpenReceiver (\_ -> ServerSentEventOpen)
+        , sseErrorReceiver ServerSentEventError
+        , sseMessageReceiver (\s -> ServerSentEventMessage (Decode.decodeString pingMessageDecoder s))
+        ]
