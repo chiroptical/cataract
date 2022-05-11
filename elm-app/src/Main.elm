@@ -239,5 +239,5 @@ subscriptions model =
             |> Animator.toSubscription Tick model
         , sseOpenReceiver (\_ -> ServerSentEventOpen)
         , sseErrorReceiver ServerSentEventError
-        , sseMessageReceiver (\s -> ServerSentEventMessage (Decode.decodeString pingMessageDecoder s))
+        , sseMessageReceiver (ServerSentEventMessage << Decode.decodeString pingMessageDecoder)
         ]
