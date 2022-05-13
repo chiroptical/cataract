@@ -8,6 +8,7 @@ import Animator.Inline
 import Browser
 import Browser.Dom as Dom
 import Css exposing (..)
+import Data.ServerSentEvents as SSE
 import Debug as Debug
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attributes exposing (css)
@@ -30,59 +31,6 @@ port sseErrorReceiver : (String -> msg) -> Sub msg
 
 
 port sseMessageReceiver : (String -> msg) -> Sub msg
-
-
-
--- JSON
-
-
-type alias Kind =
-    { kind : String
-    }
-
-
-kindDecoder : String -> Decode.Decoder Kind
-kindDecoder match =
-    Decode.field "kind" Decode.string
-        |> Decode.andThen
-            (\str ->
-                if match == str then
-                    Decode.succeed (Kind str)
-
-                else
-                    Decode.fail ("invalid kind, got: " ++ str ++ " wanted: " ++ match)
-            )
-
-
-
--- TODO: Sum type that stores that associates a kind to its' data
-
-
-type ServerSentEventData
-    = PingMessageData PingMessage
-
-
-serverSentEventDataDecoder : Decode.Decoder ServerSentEventData
-serverSentEventDataDecoder =
-    Decode.oneOf
-        [ Decode.map PingMessageData pingMessageDecoder
-        ]
-
-
-serverSentEventDataToString : ServerSentEventData -> String
-serverSentEventDataToString data =
-    case data of
-        PingMessageData _ ->
-            "pong"
-
-
-type alias PingMessage =
-    {}
-
-
-pingMessageDecoder : Decode.Decoder PingMessage
-pingMessageDecoder =
-    Decode.map (\_ -> PingMessage) (kindDecoder "ping")
 
 
 view : Model -> Html Msg
@@ -204,7 +152,7 @@ update msg model =
         ServerSentEventMessage input result ->
             case result of
                 Ok sseData ->
-                    Debug.log (serverSentEventDataToString sseData)
+                    Debug.log (SSE.serverSentEventDataToString sseData)
                         ( { model | decodeResult = "It worked!" }, Cmd.none )
 
                 Err err ->
@@ -218,7 +166,7 @@ type Msg
     | AnimateText
     | ServerSentEventOpen
     | ServerSentEventError String
-    | ServerSentEventMessage String (Result Decode.Error ServerSentEventData)
+    | ServerSentEventMessage String (Result Decode.Error SSE.ServerSentEventData)
 
 
 setViewport : Cmd Msg
@@ -258,5 +206,5 @@ subscriptions model =
             |> Animator.toSubscription Tick model
         , sseOpenReceiver (\_ -> ServerSentEventOpen)
         , sseErrorReceiver ServerSentEventError
-        , sseMessageReceiver (\str -> ServerSentEventMessage str (Decode.decodeString serverSentEventDataDecoder str))
+        , sseMessageReceiver (\str -> ServerSentEventMessage str (Decode.decodeString SSE.serverSentEventDataDecoder str))
         ]
