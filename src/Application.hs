@@ -133,7 +133,7 @@ makeApplication foundation = do
 
               cors
                 ( const . Just $
-                    simpleCorsResourcePolicy {corsOrigins = Just (["http://localhost:3001"], True)}
+                    simpleCorsResourcePolicy {corsOrigins = Just (["http://localhost:3001", "http://localhost:3000"], True)}
                 )
             else forceSSL
   pure $ middlewares appPlain
