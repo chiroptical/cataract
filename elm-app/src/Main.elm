@@ -8,6 +8,7 @@ import Animator.Inline
 import Browser
 import Browser.Dom as Dom
 import Css exposing (..)
+import Debug as Debug
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attributes exposing (css)
 import Html.Styled.Events exposing (onClick)
@@ -22,7 +23,7 @@ import Time
 -- PORTS
 
 
-port sseOpenReceiver : (() -> msg) -> Sub msg
+port sseOpenReceiver : (String -> msg) -> Sub msg
 
 
 port sseErrorReceiver : (String -> msg) -> Sub msg
@@ -59,6 +60,20 @@ kindDecoder match =
 
 type ServerSentEventData
     = PingMessageData PingMessage
+
+
+serverSentEventDataDecoder : Decode.Decoder ServerSentEventData
+serverSentEventDataDecoder =
+    Decode.oneOf
+        [ Decode.map PingMessageData pingMessageDecoder
+        ]
+
+
+serverSentEventDataToString : ServerSentEventData -> String
+serverSentEventDataToString data =
+    case data of
+        PingMessageData _ ->
+            "pong"
 
 
 type alias PingMessage =
@@ -175,22 +190,26 @@ update msg model =
             )
 
         ServerSentEventOpen ->
-            ( model
-            , Cmd.none
-            )
+            Debug.log "ServerSentEventOpen"
+                ( model
+                , Cmd.none
+                )
 
-        ServerSentEventError _ ->
-            ( model
-            , Cmd.none
-            )
+        ServerSentEventError err ->
+            Debug.log err
+                ( model
+                , Cmd.none
+                )
 
-        ServerSentEventMessage result ->
+        ServerSentEventMessage input result ->
             case result of
-                Ok _ ->
-                    ( { model | decodeResult = "It worked!" }, Cmd.none )
+                Ok sseData ->
+                    Debug.log (serverSentEventDataToString sseData)
+                        ( { model | decodeResult = "It worked!" }, Cmd.none )
 
-                Err _ ->
-                    ( { model | decodeResult = "It didn't work!" }, Cmd.none )
+                Err err ->
+                    Debug.log ("withInput:" ++ input ++ ", gotError: " ++ Decode.errorToString err)
+                        ( { model | decodeResult = "It didn't work!" }, Cmd.none )
 
 
 type Msg
@@ -199,7 +218,7 @@ type Msg
     | AnimateText
     | ServerSentEventOpen
     | ServerSentEventError String
-    | ServerSentEventMessage (Result Decode.Error PingMessage)
+    | ServerSentEventMessage String (Result Decode.Error ServerSentEventData)
 
 
 setViewport : Cmd Msg
@@ -239,5 +258,5 @@ subscriptions model =
             |> Animator.toSubscription Tick model
         , sseOpenReceiver (\_ -> ServerSentEventOpen)
         , sseErrorReceiver ServerSentEventError
-        , sseMessageReceiver (ServerSentEventMessage << Decode.decodeString pingMessageDecoder)
+        , sseMessageReceiver (\str -> ServerSentEventMessage str (Decode.decodeString serverSentEventDataDecoder str))
         ]
