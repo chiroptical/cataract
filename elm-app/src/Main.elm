@@ -12,7 +12,6 @@ import Data.ServerSentEvents as SSE
 import Debug as Debug
 import Html.Styled exposing (..)
 import Html.Styled.Attributes as Attributes exposing (css)
-import Html.Styled.Events exposing (onClick)
 import Json.Decode as Decode
 import Platform.Sub as Sub
 import Tailwind.Utilities as Tw
@@ -56,39 +55,19 @@ view model =
                 [ Tw.text_7xl
                 , Tw.text_purple_900
                 , position absolute
-                , top (px 300)
-                , left (px 300)
-                ]
-            ]
-            [ text model.decodeResult ]
-        , div
-            [ css
-                [ Tw.text_7xl
-                , Tw.text_purple_900
-                , position absolute
                 , top (px 200)
                 , left (px 200)
                 ]
             , Attributes.fromUnstyled <|
                 Animator.Inline.opacity model.textAnimate <|
-                    \state ->
+                    \( state, _ ) ->
                         if state then
                             Animator.at 1
 
                         else
                             Animator.at 0
             ]
-            [ text "Subscriber 1234"
-            ]
-        , div
-            [ onClick AnimateText
-            ]
-            [ button
-                [ css
-                    [ Tw.rounded_full
-                    ]
-                ]
-                [ text "animate" ]
+            [ text <| Tuple.second <| Animator.current model.textAnimate
             ]
 
         -- , div
@@ -113,6 +92,16 @@ main =
         }
 
 
+uncons : List a -> Maybe ( a, List a )
+uncons xs =
+    case xs of
+        [] ->
+            Nothing
+
+        y :: ys ->
+            Just ( y, ys )
+
+
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
     case msg of
@@ -120,22 +109,61 @@ update msg model =
             ( model, Cmd.none )
 
         Tick newTime ->
-            ( model
-                |> Animator.update newTime animator
-            , Cmd.none
-            )
+            let
+                -- If the animation queue is empty, we are no longer awaiting
+                -- animations. If it is not, queue the next animation
+                endOrAnimate : ( Model, Cmd Msg )
+                endOrAnimate =
+                    if List.isEmpty model.textAnimationQueue then
+                        ( { model | textAnimationWaitingFor = Nothing }
+                            |> Animator.update newTime animator
+                        , Cmd.none
+                        )
 
-        AnimateText ->
-            ( { model
-                | textAnimate =
-                    model.textAnimate
-                        |> Animator.queue
-                            [ Animator.event (Animator.millis 2000) True
-                            , Animator.event (Animator.millis 2000) False
-                            ]
-              }
-            , Cmd.none
-            )
+                    else
+                        ( model
+                            |> Animator.update newTime animator
+                        , Task.perform AnimateText (Task.succeed ())
+                        )
+            in
+            case model.textAnimationWaitingFor of
+                -- If we aren't waiting for any animations, check to see if we need
+                -- to queue a new one
+                Nothing ->
+                    endOrAnimate
+
+                Just state ->
+                    if Animator.arrivedAt state newTime model.textAnimate then
+                        -- We have arrived at the end of the animation loop. Finalize
+                        -- or queue up the next animation
+                        endOrAnimate
+
+                    else
+                        -- We are still waiting for the current animation to finish,
+                        -- just tick
+                        ( model
+                            |> Animator.update newTime animator
+                        , Cmd.none
+                        )
+
+        AnimateText _ ->
+            case uncons model.textAnimationQueue of
+                Nothing ->
+                    ( model, Cmd.none )
+
+                Just ( text, tail ) ->
+                    ( { model
+                        | textAnimate =
+                            model.textAnimate
+                                |> Animator.queue
+                                    [ Animator.event (Animator.millis 2000) ( True, text )
+                                    , Animator.event (Animator.millis 2000) ( False, text )
+                                    ]
+                        , textAnimationQueue = tail
+                        , textAnimationWaitingFor = Just ( False, text )
+                      }
+                    , Cmd.none
+                    )
 
         ServerSentEventOpen ->
             Debug.log "ServerSentEventOpen"
@@ -152,18 +180,32 @@ update msg model =
         ServerSentEventMessage input result ->
             case result of
                 Ok sseData ->
-                    Debug.log (SSE.serverSentEventDataToString sseData)
-                        ( { model | decodeResult = "It worked!" }, Cmd.none )
+                    let
+                        humanReadable =
+                            SSE.serverSentEventDataToString sseData
+                    in
+                    Debug.log humanReadable
+                        ( case sseData of
+                            SSE.PingMessageData _ ->
+                                model
+
+                            _ ->
+                                { model
+                                    | textAnimationQueue =
+                                        model.textAnimationQueue ++ [ humanReadable ]
+                                }
+                        , Cmd.none
+                        )
 
                 Err err ->
                     Debug.log ("withInput:" ++ input ++ ", gotError: " ++ Decode.errorToString err)
-                        ( { model | decodeResult = "It didn't work!" }, Cmd.none )
+                        ( model, Cmd.none )
 
 
 type Msg
     = NoOp
     | Tick Time.Posix
-    | AnimateText
+    | AnimateText ()
     | ServerSentEventOpen
     | ServerSentEventError String
     | ServerSentEventMessage String (Result Decode.Error SSE.ServerSentEventData)
@@ -175,8 +217,9 @@ setViewport =
 
 
 type alias Model =
-    { textAnimate : Animator.Timeline Bool
-    , decodeResult : String
+    { textAnimate : Animator.Timeline ( Bool, String )
+    , textAnimationQueue : List String
+    , textAnimationWaitingFor : Maybe ( Bool, String )
     }
 
 
@@ -192,8 +235,9 @@ animator =
 
 initialModel : () -> ( Model, Cmd Msg )
 initialModel _ =
-    ( { textAnimate = Animator.init False
-      , decodeResult = ""
+    ( { textAnimate = Animator.init ( False, "" )
+      , textAnimationQueue = []
+      , textAnimationWaitingFor = Nothing
       }
     , setViewport
     )
