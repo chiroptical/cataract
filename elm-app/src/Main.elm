@@ -1,22 +1,16 @@
 port module Main exposing (main)
 
--- import Svg.Styled as StyledSvg
--- import Svg.Styled.Attributes as SvgAttribs
-
-import Animator
-import Animator.Inline
 import Browser
-import Browser.Dom as Dom
+import Browser.Navigation as Nav
 import Css exposing (..)
-import Data.ServerSentEvents as SSE
 import Debug as Debug
 import Html.Styled exposing (..)
-import Html.Styled.Attributes as Attributes exposing (css)
-import Json.Decode as Decode
+import Page.Home as Home
+import Page.Overlay as Overlay
 import Platform.Sub as Sub
-import Tailwind.Utilities as Tw
-import Task
-import Time
+import Route as Route exposing (Route)
+import Session exposing (Session)
+import Url
 
 
 
@@ -32,223 +26,173 @@ port sseErrorReceiver : (String -> msg) -> Sub msg
 port sseMessageReceiver : (String -> msg) -> Sub msg
 
 
-view : Model -> Html Msg
-view model =
-    div
-        [ css
-            [ width (px 1920)
-            , height (px 1080)
-            ]
-        ]
-        [ div
-            [ css
-                [ Tw.text_7xl
-                , Tw.text_purple_900
-                , position absolute
-                , top (px 100)
-                , left (px 100)
-                ]
-            ]
-            [ text "Followers 12" ]
-        , div
-            [ css
-                [ Tw.text_7xl
-                , Tw.text_purple_900
-                , position absolute
-                , top (px 200)
-                , left (px 200)
-                ]
-            , Attributes.fromUnstyled <|
-                Animator.Inline.opacity model.textAnimate <|
-                    \( state, _ ) ->
-                        if state then
-                            Animator.at 1
-
-                        else
-                            Animator.at 0
-            ]
-            [ text <| Tuple.second <| Animator.current model.textAnimate
-            ]
-
-        -- , div
-        --     [ css
-        --         [ position absolute
-        --         , top (px 1000)
-        --         , left (px 200)
-        --         , transform (scale 0.5)
-        --         ]
-        --     ]
-        --     [ snail ]
-        ]
-
-
 main : Program () Model Msg
 main =
-    Browser.element
-        { view = view >> toUnstyled
+    Browser.application
+        { init = init
+        , view = toBrowserDocument
         , update = update
-        , init = initialModel
         , subscriptions = subscriptions
+        , onUrlChange = UrlChanged
+        , onUrlRequest = LinkClicked
         }
 
 
-uncons : List a -> Maybe ( a, List a )
-uncons xs =
-    case xs of
-        [] ->
-            Nothing
+type Model
+    = Redirect Session
+    | NotFound Session
+    | Home Home.Model
+    | Overlay Overlay.Model
 
-        y :: ys ->
-            Just ( y, ys )
+
+toSession : Model -> Session
+toSession page =
+    case page of
+        Redirect session ->
+            session
+
+        NotFound session ->
+            session
+
+        Home model ->
+            model.session
+
+        Overlay model ->
+            model.session
+
+
+init : () -> Url.Url -> Nav.Key -> ( Model, Cmd Msg )
+init _ url key =
+    let
+        log =
+            case Route.fromUrl url of
+                Nothing ->
+                    "fromUrl -> Nothing"
+
+                Just r ->
+                    Route.toString r
+    in
+    changeRouteTo
+        (Route.fromUrl url)
+        (Redirect (Session key))
+
+
+changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )
+changeRouteTo maybeRoute model =
+    let
+        session =
+            toSession model
+    in
+    case maybeRoute of
+        Nothing ->
+            ( NotFound session, Cmd.none )
+
+        Just Route.Root ->
+            ( model, Route.replaceUrl session.navKey Route.Home )
+
+        Just Route.Home ->
+            Home.init session
+                |> updateWith Home GotHomeMsg model
+
+        Just Route.Overlay ->
+            Overlay.initialModel session
+                |> updateWith Overlay GotOverlayMsg model
+
+
+type Msg
+    = LinkClicked Browser.UrlRequest
+    | UrlChanged Url.Url
+    | GotOverlayMsg Overlay.Msg
+    | GotHomeMsg Home.Msg
 
 
 update : Msg -> Model -> ( Model, Cmd Msg )
 update msg model =
-    case msg of
-        NoOp ->
+    case ( msg, model ) of
+        ( LinkClicked urlRequest, _ ) ->
+            case urlRequest of
+                Browser.Internal url ->
+                    case url.fragment of
+                        Nothing ->
+                            ( model, Cmd.none )
+
+                        Just _ ->
+                            ( model, Nav.pushUrl (toSession model).navKey (Url.toString url) )
+
+                Browser.External href ->
+                    ( model, Nav.load href )
+
+        ( UrlChanged url, _ ) ->
+            changeRouteTo (Route.fromUrl url) model
+
+        ( GotOverlayMsg subMsg, Overlay subModel ) ->
+            Overlay.update subMsg subModel
+                |> updateWith Overlay GotOverlayMsg model
+
+        _ ->
             ( model, Cmd.none )
 
-        Tick newTime ->
-            let
-                -- If the animation queue is empty, we are no longer awaiting
-                -- animations. If it is not, queue the next animation
-                endOrAnimate : ( Model, Cmd Msg )
-                endOrAnimate =
-                    if List.isEmpty model.textAnimationQueue then
-                        ( { model | textAnimationWaitingFor = Nothing }
-                            |> Animator.update newTime animator
-                        , Cmd.none
-                        )
 
-                    else
-                        ( model
-                            |> Animator.update newTime animator
-                        , Task.perform AnimateText (Task.succeed ())
-                        )
-            in
-            case model.textAnimationWaitingFor of
-                -- If we aren't waiting for any animations, check to see if we need
-                -- to queue a new one
-                Nothing ->
-                    endOrAnimate
-
-                Just state ->
-                    if Animator.arrivedAt state newTime model.textAnimate then
-                        -- We have arrived at the end of the animation loop. Finalize
-                        -- or queue up the next animation
-                        endOrAnimate
-
-                    else
-                        -- We are still waiting for the current animation to finish,
-                        -- just tick
-                        ( model
-                            |> Animator.update newTime animator
-                        , Cmd.none
-                        )
-
-        AnimateText _ ->
-            case uncons model.textAnimationQueue of
-                Nothing ->
-                    ( model, Cmd.none )
-
-                Just ( text, tail ) ->
-                    ( { model
-                        | textAnimate =
-                            model.textAnimate
-                                |> Animator.queue
-                                    [ Animator.event (Animator.millis 2000) ( True, text )
-                                    , Animator.event (Animator.millis 2000) ( False, text )
-                                    ]
-                        , textAnimationQueue = tail
-                        , textAnimationWaitingFor = Just ( False, text )
-                      }
-                    , Cmd.none
-                    )
-
-        ServerSentEventOpen ->
-            Debug.log "ServerSentEventOpen"
-                ( model
-                , Cmd.none
-                )
-
-        ServerSentEventError err ->
-            Debug.log err
-                ( model
-                , Cmd.none
-                )
-
-        ServerSentEventMessage input result ->
-            case result of
-                Ok sseData ->
-                    let
-                        humanReadable =
-                            SSE.serverSentEventDataToString sseData
-                    in
-                    Debug.log humanReadable
-                        ( case sseData of
-                            SSE.PingMessageData _ ->
-                                model
-
-                            _ ->
-                                { model
-                                    | textAnimationQueue =
-                                        model.textAnimationQueue ++ [ humanReadable ]
-                                }
-                        , Cmd.none
-                        )
-
-                Err err ->
-                    Debug.log ("withInput:" ++ input ++ ", gotError: " ++ Decode.errorToString err)
-                        ( model, Cmd.none )
-
-
-type Msg
-    = NoOp
-    | Tick Time.Posix
-    | AnimateText ()
-    | ServerSentEventOpen
-    | ServerSentEventError String
-    | ServerSentEventMessage String (Result Decode.Error SSE.ServerSentEventData)
-
-
-setViewport : Cmd Msg
-setViewport =
-    Task.perform (\_ -> NoOp) (Dom.setViewport 1920 1080)
-
-
-type alias Model =
-    { textAnimate : Animator.Timeline ( Bool, String )
-    , textAnimationQueue : List String
-    , textAnimationWaitingFor : Maybe ( Bool, String )
-    }
-
-
-animator : Animator.Animator Model
-animator =
-    Animator.animator
-        |> Animator.watching
-            .textAnimate
-            (\new model ->
-                { model | textAnimate = new }
-            )
-
-
-initialModel : () -> ( Model, Cmd Msg )
-initialModel _ =
-    ( { textAnimate = Animator.init ( False, "" )
-      , textAnimationQueue = []
-      , textAnimationWaitingFor = Nothing
-      }
-    , setViewport
+updateWith :
+    (subModel -> Model)
+    -> (subMsg -> Msg)
+    -> Model
+    -> ( subModel, Cmd subMsg )
+    -> ( Model, Cmd Msg )
+updateWith toModel toMsg _ ( subModel, subCmd ) =
+    ( toModel subModel
+    , Cmd.map toMsg subCmd
     )
 
 
 subscriptions : Model -> Sub Msg
 subscriptions model =
-    Sub.batch
-        [ animator
-            |> Animator.toSubscription Tick model
-        , sseOpenReceiver (\_ -> ServerSentEventOpen)
-        , sseErrorReceiver ServerSentEventError
-        , sseMessageReceiver (\str -> ServerSentEventMessage str (Decode.decodeString SSE.serverSentEventDataDecoder str))
-        ]
+    case model of
+        Redirect _ ->
+            Sub.none
+
+        NotFound _ ->
+            Sub.none
+
+        Home home ->
+            Sub.map
+                GotHomeMsg
+                (Home.subscriptions home)
+
+        Overlay overlay ->
+            Sub.map
+                GotOverlayMsg
+                (Overlay.subscriptions
+                    { sseOpenReceiver = sseOpenReceiver
+                    , sseErrorReceiver = sseErrorReceiver
+                    , sseMessageReceiver = sseMessageReceiver
+                    }
+                    overlay
+                )
+
+
+toBrowserDocument : Model -> Browser.Document Msg
+toBrowserDocument model =
+    case model of
+        Overlay _ ->
+            { title = "Overlay"
+            , body = [ view model |> toUnstyled ]
+            }
+
+        _ ->
+            { title = "Placeholder"
+            , body = [ view model |> toUnstyled ]
+            }
+
+
+view : Model -> Html Msg
+view model =
+    case model of
+        Overlay overlayModel ->
+            Html.Styled.map GotOverlayMsg (Overlay.view overlayModel)
+
+        Home homeModel ->
+            Html.Styled.map GotHomeMsg (Home.view homeModel)
+
+        _ ->
+            div [] [ text "Followers 12" ]
