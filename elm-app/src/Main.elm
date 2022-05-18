@@ -3,10 +3,8 @@ port module Main exposing (main)
 import Browser
 import Browser.Navigation as Nav
 import Css exposing (..)
-import Data.ServerSentEvents as SSE
 import Debug as Debug
 import Html.Styled exposing (..)
-import Json.Decode as Decode
 import Page.Home as Home
 import Page.Overlay as Overlay
 import Platform.Sub as Sub
@@ -74,12 +72,9 @@ init _ url key =
                 Just r ->
                     Route.toString r
     in
-    Debug.log
-        log
-        (changeRouteTo
-            (Route.fromUrl url)
-            (Redirect (Session key))
-        )
+    changeRouteTo
+        (Route.fromUrl url)
+        (Redirect (Session key))
 
 
 changeRouteTo : Maybe Route -> Model -> ( Model, Cmd Msg )

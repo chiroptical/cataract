@@ -6,6 +6,8 @@ const app = Elm.Main.init({ node: root });
 
 var sse = new EventSource("http://localhost:3000/sse", {withCredentials: true});
 
+// TODO: What happens when we leave /#/overlay? Are the deactivated? Or do they
+// continue running?
 sse.onmessage = function (event) {
     app.ports.sseMessageReceiver.send(event.data);
 };
