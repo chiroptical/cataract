@@ -151,19 +151,29 @@ updateWith toModel toMsg _ ( subModel, subCmd ) =
 
 
 subscriptions : Model -> Sub Msg
-subscriptions _ =
-    Sub.batch
-        [ sseOpenReceiver (\_ -> GotOverlayMsg Overlay.ServerSentEventOpen)
-        , sseErrorReceiver (GotOverlayMsg << Overlay.ServerSentEventError)
-        , sseMessageReceiver
-            (\str ->
+subscriptions model =
+    case model of
+        Redirect _ ->
+            Sub.none
+
+        NotFound _ ->
+            Sub.none
+
+        Home home ->
+            Sub.map
+                GotHomeMsg
+                (Home.subscriptions home)
+
+        Overlay overlay ->
+            Sub.map
                 GotOverlayMsg
-                    (Overlay.ServerSentEventMessage
-                        str
-                        (Decode.decodeString SSE.serverSentEventDataDecoder str)
-                    )
-            )
-        ]
+                (Overlay.subscriptions
+                    { sseOpenReceiver = sseOpenReceiver
+                    , sseErrorReceiver = sseErrorReceiver
+                    , sseMessageReceiver = sseMessageReceiver
+                    }
+                    overlay
+                )
 
 
 toBrowserDocument : Model -> Browser.Document Msg

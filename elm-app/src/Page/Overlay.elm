@@ -26,6 +26,13 @@ import Task
 import Time
 
 
+type alias Ports msg =
+    { sseOpenReceiver : (String -> msg) -> Sub msg
+    , sseErrorReceiver : (String -> msg) -> Sub msg
+    , sseMessageReceiver : (String -> msg) -> Sub msg
+    }
+
+
 view : Model -> Html Msg
 view model =
     div
@@ -229,9 +236,17 @@ initialModel session =
     )
 
 
-subscriptions : Model -> Sub Msg
-subscriptions model =
+subscriptions : Ports Msg -> Model -> Sub Msg
+subscriptions ports model =
     Sub.batch
         [ animator
             |> Animator.toSubscription Tick model
+        , ports.sseOpenReceiver (\_ -> ServerSentEventOpen)
+        , ports.sseErrorReceiver ServerSentEventError
+        , ports.sseMessageReceiver
+            (\str ->
+                ServerSentEventMessage
+                    str
+                    (Decode.decodeString SSE.serverSentEventDataDecoder str)
+            )
         ]
